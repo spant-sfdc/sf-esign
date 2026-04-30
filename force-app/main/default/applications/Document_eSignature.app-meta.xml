@@ -16,7 +16,5 @@
     <!-- Tab order = nav bar order; first tab = default landing tab -->
     <tabs>Signature_Request__c</tabs>
     <tabs>Signature_Audit__c</tabs>
-    <tabs>Document_Template__c</tabs>
-    <tabs>Document_Generation_Log__c</tabs>
     <tabs>standard-report</tabs>
 </CustomApplication>

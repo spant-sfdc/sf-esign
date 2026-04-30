@@ -41,6 +41,11 @@ public with sharing class ESignService {
             // Re-query to get auto-generated Name field
             req = ESignRequestSelector.findById(req.Id);
 
+            // Link original document to this Signature_Request__c record
+            if (String.isNotBlank(req.Document_Id__c)) {
+                ESignDocumentService.linkDocumentToRecord(req.Document_Id__c, req.Id);
+            }
+
             // Audit: Created
             ESignAuditService.log(
                 req.Id, 'Created', req.Recipient_Email__c,

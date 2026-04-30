@@ -123,6 +123,9 @@ public without sharing class ESignDocumentService {
             WHERE  Id = :signedCv.Id
         ].ContentDocumentId;
 
+        // Link signed document to the Signature_Request__c record (duplicate-safe)
+        linkDocumentToRecord(signedDocId, req.Id);
+
         // Link signed document to the related record if provided
         if (String.isNotBlank(req.Related_Record_Id__c)) {
             linkDocumentToRecord(signedDocId, req.Related_Record_Id__c);

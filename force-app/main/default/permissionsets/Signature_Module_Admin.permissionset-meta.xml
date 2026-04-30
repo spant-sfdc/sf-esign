@@ -69,12 +69,4 @@
         <tab>Signature_Audit__c</tab>
         <visibility>Available</visibility>
     </tabSettings>
-    <tabSettings>
-        <tab>Document_Template__c</tab>
-        <visibility>Available</visibility>
-    </tabSettings>
-    <tabSettings>
-        <tab>Document_Generation_Log__c</tab>
-        <visibility>Available</visibility>
-    </tabSettings>
 </PermissionSet>
