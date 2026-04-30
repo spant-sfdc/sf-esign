@@ -8,13 +8,6 @@
         <protected>false</protected>
         <shortDescription>SF-eSign public site base URL</shortDescription>
         <value>https://YOUR-DOMAIN.my.site.com/esign</value>
-        <!--
-            DEPLOYMENT NOTE: Replace this value with your actual Salesforce Site base URL
-            before deploying to production. Example:
-              Sandbox:    https://yourorg--sandbox.sandbox.my.site.com/esign
-              Production: https://yourorg.my.site.com/esign
-            The signing link is constructed as: {ESign_Site_Base_URL}/apex/SignDocument?token={token}
-        -->
     </labels>
 
     <labels>
@@ -51,6 +44,15 @@
         <protected>false</protected>
         <shortDescription>Support email shown on error pages</shortDescription>
         <value>support@yourorg.com</value>
+    </labels>
+
+    <labels>
+        <fullName>ESign_PDF_Stamp_Endpoint</fullName>
+        <categories>ESign</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PDF stamp service URL (blank = Tier 1 manifest fallback)</shortDescription>
+        <value>NOT_CONFIGURED</value>
     </labels>
 
     <labels>

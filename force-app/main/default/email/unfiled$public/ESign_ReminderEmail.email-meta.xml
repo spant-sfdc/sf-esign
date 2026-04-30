@@ -4,9 +4,8 @@
     <description>Reminder email for pending SF-eSign requests. Sent when a signer has not acted within the configured reminder interval.</description>
     <encodingKey>UTF-8</encodingKey>
     <name>ESign Signing Reminder</name>
-    <relatedEntityType>Signature_Request__c</relatedEntityType>
     <style>none</style>
     <subject>Reminder: Your document is waiting for your signature — {!relatedTo.Name}</subject>
     <type>custom</type>
-    <uiType>SFX</uiType>
+    <uiType>Aloha</uiType>
 </EmailTemplate>

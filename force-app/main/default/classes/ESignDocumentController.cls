@@ -184,7 +184,7 @@ public without sharing class ESignDocumentController {
     private void checkRateLimit() {
         if (String.isBlank(token)) return;
 
-        Integer limit = Integer.valueOf(System.Label.ESign_Rate_Limit_Per_Hour);
+        Integer maxLoads = Integer.valueOf(System.Label.ESign_Rate_Limit_Per_Hour);
         String  cacheKey = 'local.ESign.' + token.substring(0, Math.min(20, token.length()));
 
         Integer loadCount = 0;
@@ -196,7 +196,7 @@ public without sharing class ESignDocumentController {
             return;
         }
 
-        if (loadCount >= limit) {
+        if (loadCount >= maxLoads) {
             ESignAuditService.logRateLimit(null, null, token, getClientIP(), loadCount);
             throw new ESignException('RATE_LIMITED');
         }

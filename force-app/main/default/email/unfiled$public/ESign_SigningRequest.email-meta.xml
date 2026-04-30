@@ -4,9 +4,8 @@
     <description>Signing request email sent to recipients via SF-eSign. Includes signing link, optional personal message, and case-raise fallback link.</description>
     <encodingKey>UTF-8</encodingKey>
     <name>ESign Signing Request</name>
-    <relatedEntityType>Signature_Request__c</relatedEntityType>
     <style>none</style>
     <subject>Action Required: Please sign your document — {!relatedTo.Name}</subject>
     <type>custom</type>
-    <uiType>SFX</uiType>
+    <uiType>Aloha</uiType>
 </EmailTemplate>

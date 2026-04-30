@@ -32,9 +32,6 @@
          SIGNATURE_REQUEST__C FIELD PERMISSIONS
     ═══════════════════════════════════════════ -->
     <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Document_Id__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>true</editable><field>Signature_Request__c.Content_Version_Id__c</field><readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -44,13 +41,7 @@
         <editable>true</editable><field>Signature_Request__c.Related_Object_Type__c</field><readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Recipient_Email__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>true</editable><field>Signature_Request__c.Recipient_Name__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Status__c</field><readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable><field>Signature_Request__c.Secure_Token__c</field><readable>true</readable>
@@ -102,12 +93,6 @@
          SIGNATURE_AUDIT__C FIELD PERMISSIONS
          Editable = false on all fields (immutable)
     ═══════════════════════════════════════════ -->
-    <fieldPermissions>
-        <editable>false</editable><field>Signature_Audit__c.Event_Type__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable><field>Signature_Audit__c.Event_Timestamp__c</field><readable>true</readable>
-    </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable><field>Signature_Audit__c.Actor_Email__c</field><readable>true</readable>
     </fieldPermissions>

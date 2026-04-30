@@ -6,7 +6,6 @@
     <referenceTo>Signature_Request__c</referenceTo>
     <relationshipLabel>Signature Audit Events</relationshipLabel>
     <relationshipName>Signature_Audit_Events</relationshipName>
-    <required>true</required>
     <trackTrending>false</trackTrending>
     <type>MasterDetail</type>
     <writeRequiresMasterRead>false</writeRequiresMasterRead>

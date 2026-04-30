@@ -189,7 +189,7 @@ public class ESignDocumentService {
             return originalCv.VersionData;
         }
 
-        if (String.isBlank(stampEndpoint) || Test.isRunningTest()) {
+        if (String.isBlank(stampEndpoint) || stampEndpoint == 'NOT_CONFIGURED' || Test.isRunningTest()) {
             return originalCv.VersionData; // Tier 1 fallback
         }
 
