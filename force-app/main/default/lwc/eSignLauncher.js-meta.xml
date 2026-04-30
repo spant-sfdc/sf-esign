@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>61.0</apiVersion>
+    <isExposed>true</isExposed>
+    <description>SF-eSign launcher component. Drop into any record page or custom flow to initiate a signing request for any document.</description>
+    <targets>
+        <target>lightning__RecordPage</target>
+        <target>lightning__AppPage</target>
+        <target>lightning__HomePage</target>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <property name="contentDocumentId" type="String" label="Content Document Id"
+                      description="ContentDocumentId of the document to sign. Leave blank to set programmatically."/>
+            <property name="sourceSystem" type="String" label="Source System" default="LWC"
+                      description="Identifies this integration point in the audit trail."/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

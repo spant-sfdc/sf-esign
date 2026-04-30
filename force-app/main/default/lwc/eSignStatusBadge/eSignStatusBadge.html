@@ -1,0 +1,20 @@
+<template>
+    <template if:true={isLoaded}>
+        <span class={badgeClass} title={statusLabel}>
+            <lightning-icon
+                icon-name={iconName}
+                size="xx-small"
+                class="slds-m-right_xx-small">
+            </lightning-icon>
+            {statusLabel}
+        </span>
+        <template if:true={showSignedDate}>
+            <div class="esign-signed-date">
+                Signed: {formattedSignedDate}
+            </div>
+        </template>
+    </template>
+    <template if:false={isLoaded}>
+        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+    </template>
+</template>

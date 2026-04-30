@@ -1,0 +1,64 @@
+<template>
+    <lightning-card title="Audit Trail" icon-name="utility:trail">
+
+        <template if:true={isLoading}>
+            <div class="slds-p-around_medium slds-text-align_center">
+                <lightning-spinner alternative-text="Loading audit trail" size="small"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={hasError}>
+            <div class="slds-p-around_medium slds-theme_error slds-text-align_center">
+                Failed to load audit trail.
+            </div>
+        </template>
+
+        <template if:true={isEmpty}>
+            <div class="slds-p-around_medium slds-text-align_center slds-text-color_weak">
+                No audit events recorded yet.
+            </div>
+        </template>
+
+        <template if:true={hasEvents}>
+            <div class="slds-p-around_medium">
+                <ul class="esign-timeline" role="list">
+                    <template for:each={events} for:item="event">
+                        <li key={event.Id} class="esign-timeline__item">
+                            <div class={event.dotClass} aria-hidden="true"></div>
+                            <div class="esign-timeline__content">
+                                <div class="esign-timeline__header">
+                                    <span class={event.labelClass}>{event.Event_Type__c}</span>
+                                    <span class="esign-timeline__time">{event.formattedTimestamp}</span>
+                                </div>
+                                <div class="esign-timeline__meta">
+                                    <template if:true={event.Actor_Email__c}>
+                                        <span class="esign-timeline__actor">
+                                            <lightning-icon icon-name="utility:user"
+                                                size="xx-small"
+                                                class="slds-m-right_xx-small">
+                                            </lightning-icon>
+                                            {event.Actor_Email__c}
+                                        </span>
+                                    </template>
+                                    <template if:true={event.IP_Address__c}>
+                                        <span class="esign-timeline__ip">IP: {event.IP_Address__c}</span>
+                                    </template>
+                                    <template if:true={event.Source_System__c}>
+                                        <span class="esign-timeline__source">via {event.Source_System__c}</span>
+                                    </template>
+                                </div>
+                                <template if:true={event.Event_Detail__c}>
+                                    <details class="esign-timeline__detail">
+                                        <summary>Detail</summary>
+                                        <pre class="esign-timeline__detail-body">{event.Event_Detail__c}</pre>
+                                    </details>
+                                </template>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+
+    </lightning-card>
+</template>

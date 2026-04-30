@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Signing_IP__c</fullName>
+    <description>IP address of the signer captured via Salesforce X-Salesforce-SIP header at signing time. Required for legal audit trail.</description>
+    <label>Signing IP Address</label>
+    <length>50</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,6 @@
+.sfdx/
+.sf/
+node_modules/
+*.resource
+!*.resource-meta.xml
+.DS_Store

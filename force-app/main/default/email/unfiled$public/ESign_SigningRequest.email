@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f9;margin:0;padding:0}
+  .wrapper{max-width:600px;margin:32px auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  .header{background:#0070d2;padding:28px 32px;text-align:center}
+  .header h1{color:#ffffff;font-size:22px;margin:0}
+  .header p{color:#cce3f6;font-size:13px;margin:6px 0 0}
+  .body{padding:32px}
+  .body p{color:#333;font-size:15px;line-height:1.6;margin:0 0 16px}
+  .message-box{background:#f0f7ff;border-left:4px solid #0070d2;padding:14px 18px;border-radius:4px;margin-bottom:20px;font-size:14px;color:#1c4f82}
+  .btn-primary{display:block;width:fit-content;margin:0 auto 12px;background:#0070d2;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:6px;font-size:16px;font-weight:bold;text-align:center}
+  .btn-secondary{display:block;width:fit-content;margin:0 auto;color:#c23934;text-decoration:none;font-size:13px;text-align:center}
+  .divider{border:none;border-top:1px solid #e5e5e5;margin:24px 0}
+  .expiry-note{font-size:12px;color:#888;text-align:center;margin-top:8px}
+  .footer{background:#f4f6f9;padding:20px 32px;text-align:center;font-size:12px;color:#888}
+  .footer a{color:#0070d2;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <h1>{!$Label.ESign_Org_Display_Name}</h1>
+    <p>Secure Electronic Signature Request</p>
+  </div>
+
+  <div class="body">
+    <p>Hello {!relatedTo.Recipient_Name__c},</p>
+
+    <p>You have received a document that requires your electronic signature.</p>
+
+    {!IF(ISBLANK(relatedTo.Message_to_Signer__c), '',
+      '<div class="message-box">' & relatedTo.Message_to_Signer__c & '</div>'
+    )}
+
+    <p>Please click the button below to review and sign the document. The link is secure and unique to you.</p>
+
+    <a class="btn-primary"
+       href="{!$Label.ESign_Site_Base_URL}/apex/SignDocument?token={!relatedTo.Secure_Token__c}">
+      Review &amp; Sign Document
+    </a>
+
+    <p class="expiry-note">
+      This link expires on {!relatedTo.Token_Expiry__c}.
+    </p>
+
+    <hr class="divider"/>
+
+    <p>If you have questions or believe you received this in error, you can raise a support case:</p>
+
+    <a class="btn-secondary"
+       href="{!$Label.ESign_Site_Base_URL}/apex/RaiseCase?token={!relatedTo.Secure_Token__c}">
+      Raise a Support Case
+    </a>
+  </div>
+
+  <div class="footer">
+    <p>This is an automated message from {!$Label.ESign_Org_Display_Name}.</p>
+    <p>Need help? Contact us at <a href="mailto:{!$Label.ESign_Support_Email}">{!$Label.ESign_Support_Email}</a></p>
+    <p>Request Reference: {!relatedTo.Name}</p>
+  </div>
+
+</div>
+</body>
+</html>

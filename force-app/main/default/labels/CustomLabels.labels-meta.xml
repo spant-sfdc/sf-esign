@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+
+    <labels>
+        <fullName>ESign_Site_Base_URL</fullName>
+        <categories>ESign</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>SF-eSign public site base URL</shortDescription>
+        <value>https://YOUR-DOMAIN.my.site.com/esign</value>
+        <!--
+            DEPLOYMENT NOTE: Replace this value with your actual Salesforce Site base URL
+            before deploying to production. Example:
+              Sandbox:    https://yourorg--sandbox.sandbox.my.site.com/esign
+              Production: https://yourorg.my.site.com/esign
+            The signing link is constructed as: {ESign_Site_Base_URL}/apex/SignDocument?token={token}
+        -->
+    </labels>
+
+    <labels>
+        <fullName>ESign_Token_Expiry_Hours_Default</fullName>
+        <categories>ESign</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Default token expiry window in hours</shortDescription>
+        <value>72</value>
+    </labels>
+
+    <labels>
+        <fullName>ESign_Max_Reminders</fullName>
+        <categories>ESign</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Maximum reminder emails allowed per request</shortDescription>
+        <value>3</value>
+    </labels>
+
+    <labels>
+        <fullName>ESign_Rate_Limit_Per_Hour</fullName>
+        <categories>ESign</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Max signing page loads per token per hour before rate-limit block</shortDescription>
+        <value>10</value>
+    </labels>
+
+    <labels>
+        <fullName>ESign_Support_Email</fullName>
+        <categories>ESign</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Support email shown on error pages</shortDescription>
+        <value>support@yourorg.com</value>
+    </labels>
+
+    <labels>
+        <fullName>ESign_Org_Display_Name</fullName>
+        <categories>ESign</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Organisation display name shown in emails and signing page header</shortDescription>
+        <value>Your Organisation Name</value>
+    </labels>
+
+</CustomLabels>

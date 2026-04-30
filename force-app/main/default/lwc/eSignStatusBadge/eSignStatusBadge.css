@@ -1,0 +1,22 @@
+.esign-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    white-space: nowrap;
+}
+.esign-badge--success { background: #d4edda; color: #155724; }
+.esign-badge--warning { background: #fff3cd; color: #856404; }
+.esign-badge--error   { background: #f8d7da; color: #721c24; }
+.esign-badge--info    { background: #cce5ff; color: #004085; }
+.esign-badge--neutral { background: #e2e3e5; color: #383d41; }
+
+.esign-signed-date {
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+}

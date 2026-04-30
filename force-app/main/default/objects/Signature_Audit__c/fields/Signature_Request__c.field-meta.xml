@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Signature_Request__c</fullName>
+    <description>Master-Detail relationship to the parent Signature_Request__c. Deletion of parent cascades; audit records can never be reparented.</description>
+    <label>Signature Request</label>
+    <referenceTo>Signature_Request__c</referenceTo>
+    <relationshipLabel>Signature Audit Events</relationshipLabel>
+    <relationshipName>Signature_Audit_Events</relationshipName>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

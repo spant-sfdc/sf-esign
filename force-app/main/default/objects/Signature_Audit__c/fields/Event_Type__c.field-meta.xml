@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Event_Type__c</fullName>
+    <description>Categorises the audit event. Restricted picklist prevents free-form entries and keeps reporting consistent.</description>
+    <label>Event Type</label>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Created</fullName><default>false</default><label>Created</label></value>
+            <value><fullName>Email_Sent</fullName><default>false</default><label>Email Sent</label></value>
+            <value><fullName>Viewed</fullName><default>false</default><label>Viewed</label></value>
+            <value><fullName>Signed</fullName><default>false</default><label>Signed</label></value>
+            <value><fullName>Declined</fullName><default>false</default><label>Declined</label></value>
+            <value><fullName>Expired</fullName><default>false</default><label>Expired</label></value>
+            <value><fullName>Cancelled</fullName><default>false</default><label>Cancelled</label></value>
+            <value><fullName>Reminder_Sent</fullName><default>false</default><label>Reminder Sent</label></value>
+            <value><fullName>Rate_Limited</fullName><default>false</default><label>Rate Limited</label></value>
+            <value><fullName>Error</fullName><default>false</default><label>Error</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

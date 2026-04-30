@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Event_Timestamp__c</fullName>
+    <description>Server-side DateTime of the event. Always set in Apex using DateTime.now(); never accepted from client input.</description>
+    <label>Event Timestamp</label>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

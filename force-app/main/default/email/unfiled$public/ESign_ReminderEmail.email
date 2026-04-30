@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f9;margin:0;padding:0}
+  .wrapper{max-width:600px;margin:32px auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  .header{background:#ff6600;padding:28px 32px;text-align:center}
+  .header h1{color:#ffffff;font-size:22px;margin:0}
+  .header p{color:#ffe0cc;font-size:13px;margin:6px 0 0}
+  .body{padding:32px}
+  .body p{color:#333;font-size:15px;line-height:1.6;margin:0 0 16px}
+  .urgency-box{background:#fff5e6;border-left:4px solid #ff6600;padding:14px 18px;border-radius:4px;margin-bottom:20px;font-size:14px;color:#7a3200}
+  .btn-primary{display:block;width:fit-content;margin:0 auto 12px;background:#ff6600;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:6px;font-size:16px;font-weight:bold;text-align:center}
+  .btn-secondary{display:block;width:fit-content;margin:0 auto;color:#c23934;text-decoration:none;font-size:13px;text-align:center}
+  .expiry-note{font-size:12px;color:#888;text-align:center;margin-top:8px}
+  .footer{background:#f4f6f9;padding:20px 32px;text-align:center;font-size:12px;color:#888}
+  .footer a{color:#0070d2;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <h1>{!$Label.ESign_Org_Display_Name}</h1>
+    <p>Reminder: Document Awaiting Your Signature</p>
+  </div>
+
+  <div class="body">
+    <p>Hello {!relatedTo.Recipient_Name__c},</p>
+
+    <div class="urgency-box">
+      This is a reminder that a document is awaiting your signature.
+      The signing link expires on <strong>{!relatedTo.Token_Expiry__c}</strong>.
+    </div>
+
+    <p>Please click below to review and sign the document at your earliest convenience.</p>
+
+    <a class="btn-primary"
+       href="{!$Label.ESign_Site_Base_URL}/apex/SignDocument?token={!relatedTo.Secure_Token__c}">
+      Sign Now
+    </a>
+
+    <p class="expiry-note">
+      Link expires: {!relatedTo.Token_Expiry__c}
+    </p>
+
+    <p style="margin-top:24px;font-size:13px;color:#888">
+      If you have already signed this document, please disregard this email.
+    </p>
+
+    <a class="btn-secondary"
+       href="{!$Label.ESign_Site_Base_URL}/apex/RaiseCase?token={!relatedTo.Secure_Token__c}">
+      Raise a Support Case
+    </a>
+  </div>
+
+  <div class="footer">
+    <p>This is an automated reminder from {!$Label.ESign_Org_Display_Name}.</p>
+    <p>Contact: <a href="mailto:{!$Label.ESign_Support_Email}">{!$Label.ESign_Support_Email}</a></p>
+    <p>Request Reference: {!relatedTo.Name}</p>
+  </div>
+
+</div>
+</body>
+</html>

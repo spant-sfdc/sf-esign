@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Actor_Email__c</fullName>
+    <description>Email of the person or system that triggered this event. For signer events this is the recipient email; for system events it is the source system identifier.</description>
+    <label>Actor Email</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Email</type>
+    <unique>false</unique>
+</CustomField>

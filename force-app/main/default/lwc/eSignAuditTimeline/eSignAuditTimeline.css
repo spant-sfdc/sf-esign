@@ -1,0 +1,53 @@
+.esign-timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+.esign-timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e5e5e5;
+}
+.esign-timeline__item {
+    display: flex;
+    gap: 16px;
+    padding: 8px 0;
+    position: relative;
+}
+.esign-timeline__dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 2px;
+    z-index: 1;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px currentColor;
+}
+.esign-timeline__dot--green  { background: #28a745; color: #28a745; }
+.esign-timeline__dot--blue   { background: #0070d2; color: #0070d2; }
+.esign-timeline__dot--yellow { background: #f0ad00; color: #f0ad00; }
+.esign-timeline__dot--red    { background: #c23934; color: #c23934; }
+.esign-timeline__dot--grey   { background: #9ea6b3; color: #9ea6b3; }
+
+.esign-timeline__content { flex: 1; padding-bottom: 8px; }
+.esign-timeline__header  { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.esign-timeline__time    { font-size: 11px; color: #888; white-space: nowrap; }
+.esign-timeline__meta    { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: #666; }
+.esign-timeline__actor   { display: flex; align-items: center; }
+.esign-timeline__ip      { color: #999; font-family: monospace; }
+.esign-timeline__source  { color: #aaa; font-style: italic; }
+
+.esign-event-label         { font-size: 13px; font-weight: 700; color: #333; }
+.esign-event-label--success{ color: #155724; }
+.esign-event-label--error  { color: #721c24; }
+.esign-event-label--neutral{ color: #383d41; }
+
+.esign-timeline__detail        { margin-top: 6px; }
+.esign-timeline__detail summary{ font-size: 11px; color: #0070d2; cursor: pointer; }
+.esign-timeline__detail-body   { font-size: 11px; font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 4px; white-space: pre-wrap; word-break: break-all; }

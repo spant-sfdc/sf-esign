@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Test__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Marks this request as a test record created by Apex test classes or sandbox testing. Used to filter test data from production reports and schedulers.</description>
+    <label>Is Test</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
