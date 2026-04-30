@@ -108,7 +108,8 @@ public with sharing class ESignEmailService {
 
     /**
      * Dispatches email and logs audit event.
-     * Returns true on success, false on failure (audit Error logged).
+     * Throws ESignException if the send fails so callers can surface the error.
+     * Returns true on success.
      */
     private static Boolean sendWithAudit(
             Messaging.SingleEmailMessage mail,
@@ -116,22 +117,36 @@ public with sharing class ESignEmailService {
             String auditEventType) {
 
         try {
-            Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ mail });
+            // allOrNone=false so we can inspect the result without a thrown exception
+            List<Messaging.SendEmailResult> results = Messaging.sendEmail(
+                new List<Messaging.SingleEmailMessage>{ mail }, false
+            );
+
+            if (results.isEmpty() || !results[0].isSuccess()) {
+                String errDetail = (!results.isEmpty() && !results[0].getErrors().isEmpty())
+                    ? results[0].getErrors()[0].getMessage()
+                    : 'Unknown send error — check org email deliverability settings (Setup > Deliverability)';
+                throw new ESignException('EMAIL_SEND_ERROR:' + errDetail);
+            }
+
             ESignAuditService.log(
                 req.Id, auditEventType, req.Recipient_Email__c,
                 req.Secure_Token__c, null, null, 'EmailService'
             );
             return true;
 
+        } catch (ESignException e) {
+            ESignAuditService.logError(
+                req.Id, e.getMessage(),
+                req.Recipient_Email__c, req.Secure_Token__c, 'EmailService'
+            );
+            throw e; // re-throw so ESignService can fail the overall request
         } catch (Exception e) {
             ESignAuditService.logError(
-                req.Id,
-                'Email dispatch failed: ' + e.getMessage(),
-                req.Recipient_Email__c,
-                req.Secure_Token__c,
-                'EmailService'
+                req.Id, 'Email dispatch failed: ' + e.getMessage(),
+                req.Recipient_Email__c, req.Secure_Token__c, 'EmailService'
             );
-            return false;
+            throw new ESignException('EMAIL_SEND_ERROR:' + e.getMessage());
         }
     }
 

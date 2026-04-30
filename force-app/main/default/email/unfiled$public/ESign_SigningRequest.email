@@ -33,9 +33,7 @@
 
     <p>You have received a document that requires your electronic signature.</p>
 
-    {!IF(ISBLANK(relatedTo.Message_to_Signer__c), '',
-      '<div class="message-box">' & relatedTo.Message_to_Signer__c & '</div>'
-    )}
+    <div class="message-box">{!relatedTo.Message_to_Signer__c}</div>
 
     <p>Please click the button below to review and sign the document. The link is secure and unique to you.</p>
 
