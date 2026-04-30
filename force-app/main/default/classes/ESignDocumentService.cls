@@ -25,7 +25,7 @@
  *  - A new ContentVersion is inserted under the SAME ContentDocument Id.
  *  - The signed version Title is suffixed with " [SIGNED - {timestamp}]".
  */
-public class ESignDocumentService {
+public without sharing class ESignDocumentService {
 
     // ─────────────────────────────────────────────────────────────────────────
     // DOCUMENT RETRIEVAL
@@ -62,11 +62,22 @@ public class ESignDocumentService {
      * Guarded to 10 MB to stay within VF page response limits.
      */
     public static String getVersionBase64(String contentVersionId) {
+        if (String.isBlank(contentVersionId)) {
+            System.debug(LoggingLevel.WARN, 'getVersionBase64: contentVersionId is blank');
+            return null;
+        }
         ContentVersion cv = getVersion(contentVersionId);
         if (cv.ContentSize != null && cv.ContentSize > 10485760) {
             throw new ESignException(
                 'DOCUMENT_ERROR:Document exceeds 10 MB preview limit'
             );
+        }
+        if (cv.VersionData == null) {
+            // VersionData is null when content is inaccessible in guest context
+            // despite without sharing — return null so caller can show placeholder
+            System.debug(LoggingLevel.WARN,
+                'getVersionBase64: VersionData null for ContentVersion ' + contentVersionId);
+            return null;
         }
         return EncodingUtil.base64Encode(cv.VersionData);
     }

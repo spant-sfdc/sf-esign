@@ -154,13 +154,20 @@
         <!-- Document Preview -->
         <div class="esign-section">
             <h2 class="esign-section__title">Document to Sign</h2>
-            <div class="esign-doc-wrapper">
-                <iframe id="esignDocFrame"
-                        class="esign-doc-frame"
-                        src="data:application/pdf;base64,{!documentBase64}"
-                        title="Document requiring your signature">
-                </iframe>
-            </div>
+            <apex:outputPanel rendered="{!NOT(ISBLANK(documentBase64))}" layout="block">
+                <div class="esign-doc-wrapper">
+                    <iframe id="esignDocFrame"
+                            class="esign-doc-frame"
+                            src="data:application/pdf;base64,{!documentBase64}"
+                            title="Document requiring your signature">
+                    </iframe>
+                </div>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!ISBLANK(documentBase64)}" layout="block">
+                <div class="esign-doc-wrapper" style="display:flex;align-items:center;justify-content:center;min-height:180px;background:#f8f9fb;border:1px solid #e0e0e0;border-radius:6px">
+                    <p style="color:#666;font-size:14px">Document preview unavailable. Please proceed to sign below.</p>
+                </div>
+            </apex:outputPanel>
         </div>
 
         <!-- Signing Form -->

@@ -59,24 +59,36 @@ public without sharing class ESignDocumentController {
 
             signRequest = ESignTokenService.validateAndFetch(token);
             System.debug(LoggingLevel.DEBUG,
-                'signRequest.Id=' + signRequest?.Id + ' Status=' + signRequest?.Status__c);
+                'signRequest.Id=' + signRequest?.Id
+                + ' Status=' + signRequest?.Status__c
+                + ' ContentVersionId=' + signRequest?.Content_Version_Id__c);
 
-            if (String.isBlank(signRequest.Content_Version_Id__c)) {
-                System.debug(LoggingLevel.ERROR, 'Content_Version_Id__c is blank on request ' + signRequest.Id);
-                errorCode = 'UNEXPECTED_ERROR';
-                pageState = 'ERROR';
-                return;
+            // Fetch document for preview — isolated so a content access failure
+            // does NOT prevent the signing form from loading
+            try {
+                if (String.isNotBlank(signRequest.Content_Version_Id__c)) {
+                    documentBase64 = ESignDocumentService.getVersionBase64(
+                        signRequest.Content_Version_Id__c);
+                }
+                System.debug(LoggingLevel.DEBUG,
+                    'documentBase64 length=' + (documentBase64 != null ? documentBase64.length() : 0));
+            } catch (Exception docEx) {
+                System.debug(LoggingLevel.WARN,
+                    'Document preview unavailable: ' + docEx.getMessage()
+                    + ' | ' + docEx.getStackTraceString());
+                // documentBase64 stays null — VF page shows placeholder
             }
 
-            documentBase64 = ESignDocumentService.getVersionBase64(
-                signRequest.Content_Version_Id__c);
-
             // Mark Viewed / update last-accessed via Queueable (no guest DML)
-            if (signRequest.Status__c == 'Pending' || signRequest.Status__c == 'Viewed') {
-                System.enqueueJob(new ESignSigningQueueable(
-                    ESignSigningQueueable.ACTION_VIEWED,
-                    token, getClientIP(), getUserAgent()
-                ));
+            try {
+                if (signRequest.Status__c == 'Pending' || signRequest.Status__c == 'Viewed') {
+                    System.enqueueJob(new ESignSigningQueueable(
+                        ESignSigningQueueable.ACTION_VIEWED,
+                        token, getClientIP(), getUserAgent()
+                    ));
+                }
+            } catch (Exception qEx) {
+                System.debug(LoggingLevel.WARN, 'Viewed enqueue failed (non-critical): ' + qEx.getMessage());
             }
 
             pageState = 'SIGNING';
