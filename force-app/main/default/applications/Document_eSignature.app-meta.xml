@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#032D60</headerColor>
+        <logoVersion>0</logoVersion>
+        <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
+    </brand>
+    <description>Electronic signature lifecycle — requests, audit trail, document templates, and generation logs.</description>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <label>Document e-Signature</label>
+    <navType>Console</navType>
+    <uiType>Lightning</uiType>
+    <!-- Tab order = nav bar order; first tab = default landing tab -->
+    <tabs>Signature_Request__c</tabs>
+    <tabs>Signature_Audit__c</tabs>
+    <tabs>Document_Template__c</tabs>
+    <tabs>Document_Generation_Log__c</tabs>
+    <tabs>standard-report</tabs>
+</CustomApplication>

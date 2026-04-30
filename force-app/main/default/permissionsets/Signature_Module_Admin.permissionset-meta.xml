@@ -4,9 +4,13 @@
     <hasActivationRequired>false</hasActivationRequired>
     <label>Signature Module Admin</label>
 
-    <!-- ═══════════════════════════════════════════
-         OBJECT PERMISSIONS
-    ═══════════════════════════════════════════ -->
+    <!-- App visibility — makes Document e-Signature app accessible -->
+    <applicationVisibilities>
+        <application>Document_eSignature</application>
+        <visible>true</visible>
+    </applicationVisibilities>
+
+    <!-- Object permissions -->
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>true</allowDelete>
@@ -16,7 +20,6 @@
         <object>Signature_Request__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
-
     <!-- Audit: create + read only. Edit/Delete intentionally omitted = false -->
     <objectPermissions>
         <allowCreate>true</allowCreate>
@@ -28,87 +31,50 @@
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
 
-    <!-- ═══════════════════════════════════════════
-         SIGNATURE_REQUEST__C FIELD PERMISSIONS
-    ═══════════════════════════════════════════ -->
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Content_Version_Id__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Related_Record_Id__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Related_Object_Type__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Recipient_Name__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Secure_Token__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Token_Expiry__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Last_Accessed__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Signed_DateTime__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Signer_Email__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Signature_Type__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Signature_Image_Id__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Signed_Document_Id__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Signing_IP__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Signer_User_Agent__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Requester_Id__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Message_to_Signer__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Reminder_Sent_Count__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Last_Reminder_Sent__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable><field>Signature_Request__c.Is_Test__c</field><readable>true</readable>
-    </fieldPermissions>
+    <!-- Signature_Request__c field permissions -->
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Content_Version_Id__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Related_Record_Id__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Related_Object_Type__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Recipient_Name__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Secure_Token__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Token_Expiry__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Last_Accessed__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Signed_DateTime__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Signer_Email__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Signature_Type__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Signature_Image_Id__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Signed_Document_Id__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Signing_IP__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Signer_User_Agent__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Requester_Id__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Message_to_Signer__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Reminder_Sent_Count__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Last_Reminder_Sent__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Signature_Request__c.Is_Test__c</field><readable>true</readable></fieldPermissions>
 
-    <!-- ═══════════════════════════════════════════
-         SIGNATURE_AUDIT__C FIELD PERMISSIONS
-         Editable = false on all fields (immutable)
-    ═══════════════════════════════════════════ -->
-    <fieldPermissions>
-        <editable>false</editable><field>Signature_Audit__c.Actor_Email__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable><field>Signature_Audit__c.Token__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable><field>Signature_Audit__c.IP_Address__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable><field>Signature_Audit__c.User_Agent__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable><field>Signature_Audit__c.Event_Detail__c</field><readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable><field>Signature_Audit__c.Source_System__c</field><readable>true</readable>
-    </fieldPermissions>
+    <!-- Signature_Audit__c field permissions — all read-only (immutable audit trail) -->
+    <fieldPermissions><editable>false</editable><field>Signature_Audit__c.Actor_Email__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Signature_Audit__c.Token__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Signature_Audit__c.IP_Address__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Signature_Audit__c.User_Agent__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Signature_Audit__c.Event_Detail__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Signature_Audit__c.Source_System__c</field><readable>true</readable></fieldPermissions>
+
+    <!-- Tab visibility — DefaultOn shows tabs in the nav bar by default -->
+    <tabSettings>
+        <tab>Signature_Request__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Signature_Audit__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Document_Template__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Document_Generation_Log__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
 </PermissionSet>
