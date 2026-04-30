@@ -45,9 +45,29 @@ public without sharing class ESignDocumentController {
 
     private void initialise() {
         try {
+            System.debug(LoggingLevel.DEBUG,
+                'ESignDocumentController.initialise token=' + ESignTokenService.maskToken(token));
+
+            // Null/blank token — show "Invalid Link" without throwing
+            if (String.isBlank(token)) {
+                errorCode = 'TOKEN_INVALID';
+                pageState = 'ERROR';
+                return;
+            }
+
             checkRateLimit();
 
-            signRequest    = ESignTokenService.validateAndFetch(token);
+            signRequest = ESignTokenService.validateAndFetch(token);
+            System.debug(LoggingLevel.DEBUG,
+                'signRequest.Id=' + signRequest?.Id + ' Status=' + signRequest?.Status__c);
+
+            if (String.isBlank(signRequest.Content_Version_Id__c)) {
+                System.debug(LoggingLevel.ERROR, 'Content_Version_Id__c is blank on request ' + signRequest.Id);
+                errorCode = 'UNEXPECTED_ERROR';
+                pageState = 'ERROR';
+                return;
+            }
+
             documentBase64 = ESignDocumentService.getVersionBase64(
                 signRequest.Content_Version_Id__c);
 
@@ -62,9 +82,22 @@ public without sharing class ESignDocumentController {
             pageState = 'SIGNING';
 
         } catch (ESignException e) {
-            errorCode = e.getMessage();
+            System.debug(LoggingLevel.ERROR,
+                'ESignDocumentController ESignException: ' + e.getMessage());
+            // Normalise: TOKEN_MISSING and unknown DOCUMENT_ERROR codes map to a
+            // known VF-renderable error code so a panel always shows.
+            String code = e.getMessage();
+            if (code == 'TOKEN_MISSING' || String.isBlank(code)) {
+                code = 'TOKEN_INVALID';
+            } else if (code.startsWith('DOCUMENT_ERROR')) {
+                code = 'UNEXPECTED_ERROR';
+            }
+            errorCode = code;
             pageState = 'ERROR';
         } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR,
+                'ESignDocumentController unexpected: ' + e.getMessage()
+                + ' | ' + e.getStackTraceString());
             errorCode = 'UNEXPECTED_ERROR';
             pageState = 'ERROR';
         }

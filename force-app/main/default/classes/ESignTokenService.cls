@@ -57,7 +57,7 @@ public class ESignTokenService {
         if (req.Token_Expiry__c != null && req.Token_Expiry__c < DateTime.now()) {
             if (req.Status__c != 'Expired') {
                 req.Status__c = 'Expired';
-                update req; // safe — only status update, no sensitive write
+                Database.update(req, AccessLevel.SYSTEM_MODE);
             }
             throw new ESignException('TOKEN_EXPIRED');
         }
