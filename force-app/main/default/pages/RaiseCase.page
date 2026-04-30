@@ -1,0 +1,69 @@
+<apex:page showHeader="false"
+           sidebar="false"
+           docType="html-5.0"
+           standardStylesheets="false"
+           applyBodyTag="false"
+           cache="false"
+           title="Support – SF-eSign">
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="robots" content="noindex, nofollow"/>
+    <title>Support – SF-eSign</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+        .card{background:#fff;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);max-width:560px;width:100%;overflow:hidden}
+        .card__header{background:#0070d2;padding:28px 32px;text-align:center}
+        .card__header h1{color:#fff;font-size:20px;margin:0}
+        .card__header p{color:#cce3f6;font-size:13px;margin:6px 0 0}
+        .card__body{padding:32px}
+        .icon{font-size:48px;text-align:center;margin-bottom:16px}
+        h2{font-size:18px;color:#181818;text-align:center;margin-bottom:12px}
+        p{font-size:14px;color:#444;line-height:1.6;margin-bottom:16px;text-align:center}
+        .steps{background:#f8f9fb;border:1px solid #e0e0e0;border-radius:6px;padding:18px 20px;margin-bottom:20px}
+        .steps li{font-size:13px;color:#333;line-height:1.7;margin-left:18px}
+        .contact-btn{display:block;width:fit-content;margin:0 auto;background:#0070d2;color:#fff;text-decoration:none;padding:12px 32px;border-radius:6px;font-size:15px;font-weight:bold;text-align:center}
+        .ref{font-size:12px;color:#999;text-align:center;margin-top:20px;font-family:monospace}
+        .card__footer{background:#f4f6f9;padding:16px 32px;text-align:center;font-size:12px;color:#888;border-top:1px solid #e0e0e0}
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="card__header">
+        <h1>{!$Label.ESign_Org_Display_Name}</h1>
+        <p>Support Request</p>
+    </div>
+    <div class="card__body">
+        <div class="icon">🛟</div>
+        <h2>Need Help With This Document?</h2>
+        <p>If you received this document in error, have questions, or need assistance with the signing process, please contact us using the information below.</p>
+
+        <div class="steps">
+            <strong style="font-size:13px;color:#333;display:block;margin-bottom:8px">How we can help:</strong>
+            <ul>
+                <li>Verify whether you were the intended recipient</li>
+                <li>Request the document be resent or cancelled</li>
+                <li>Get help with technical issues during signing</li>
+                <li>Report suspected fraud or phishing</li>
+            </ul>
+        </div>
+
+        <a href="mailto:{!$Label.ESign_Support_Email}?subject=eSign Support Request – {!$CurrentPage.parameters.token}"
+           class="contact-btn">
+            Contact Support
+        </a>
+
+        <p class="ref">
+            Reference Token: {!$CurrentPage.parameters.token}
+        </p>
+    </div>
+    <div class="card__footer">
+        <p>This is an automated message from {!$Label.ESign_Org_Display_Name}.</p>
+        <p>Need help? <a href="mailto:{!$Label.ESign_Support_Email}" style="color:#0070d2;text-decoration:none">{!$Label.ESign_Support_Email}</a></p>
+    </div>
+</div>
+</body>
+</html>
+</apex:page>
