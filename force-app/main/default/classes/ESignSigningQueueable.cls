@@ -1,0 +1,154 @@
+/**
+ * Async worker for the eSign signing flow.
+ *
+ * Runs outside the guest-user synchronous VF context, which means:
+ *  - AccessLevel.SYSTEM_MODE DML is not restricted by Guest User License
+ *  - HTTP callouts (PDF stamp service) are allowed alongside DML
+ *  - Duplicate-sign is guarded: Queueable checks status before any DML
+ */
+public without sharing class ESignSigningQueueable
+        implements Queueable, Database.AllowsCallouts {
+
+    public  static final String ACTION_SIGN    = 'Sign';
+    public  static final String ACTION_DECLINE = 'Decline';
+    public  static final String ACTION_VIEWED  = 'Viewed';
+
+    private final String action;
+    private final String token;
+    private final String signatureData; // base64 data-URI (null for Decline/Viewed)
+    private final String signatureType;
+    private final String clientIP;
+    private final String userAgent;
+
+    // ── Constructors ────────────────────────────────────────────────────────
+
+    public ESignSigningQueueable(String token,
+                                 String signatureData,
+                                 String signatureType,
+                                 String clientIP,
+                                 String userAgent) {
+        this.action        = ACTION_SIGN;
+        this.token         = token;
+        this.signatureData = signatureData;
+        this.signatureType = signatureType;
+        this.clientIP      = clientIP;
+        this.userAgent     = userAgent;
+    }
+
+    public ESignSigningQueueable(String action,
+                                 String token,
+                                 String clientIP,
+                                 String userAgent) {
+        this.action        = action; // ACTION_DECLINE or ACTION_VIEWED
+        this.token         = token;
+        this.signatureData = null;
+        this.signatureType = null;
+        this.clientIP      = clientIP;
+        this.userAgent     = userAgent;
+    }
+
+    // ── execute ─────────────────────────────────────────────────────────────
+
+    public void execute(QueueableContext ctx) {
+        try {
+            if (action == ACTION_VIEWED) {
+                processViewed();
+            } else if (action == ACTION_DECLINE) {
+                processDecline();
+            } else {
+                processSign();
+            }
+        } catch (ESignException e) {
+            ESignAuditService.logError(null, e.getMessage(), null, token, 'SiteAsync');
+        } catch (Exception e) {
+            ESignAuditService.logError(null, 'Queueable failed: ' + e.getMessage(),
+                null, token, 'SiteAsync');
+        }
+    }
+
+    // ── Sign ────────────────────────────────────────────────────────────────
+
+    private void processSign() {
+        Signature_Request__c req = ESignTokenService.validateAndFetch(token);
+
+        // Duplicate-sign guard — token validation ensures Pending/Viewed only
+        // but a race between two simultaneous submits needs a hard check here
+        if (req.Status__c != 'Pending' && req.Status__c != 'Viewed') return;
+
+        Blob sigBlob = decodeBlob(signatureData);
+
+        // Save signature image
+        String sigImageDocId = ESignDocumentService.saveSignatureImage(
+            req.Name, sigBlob);
+
+        // Update request → Signed (first write)
+        req.Status__c             = 'Signed';
+        req.Signed_DateTime__c    = DateTime.now();
+        req.Signer_Email__c       = req.Recipient_Email__c;
+        req.Signature_Type__c     = signatureType;
+        req.Signing_IP__c         = clientIP;
+        req.Signer_User_Agent__c  = userAgent;
+        req.Signature_Image_Id__c = sigImageDocId;
+        Database.update(req, AccessLevel.SYSTEM_MODE);
+
+        // Create signed document version (Tier 1 always; Tier 2 callout if configured)
+        String signedDocId = ESignDocumentService.createSignedVersion(req, sigBlob);
+
+        // Store signed document id on request (second write)
+        req.Signed_Document_Id__c = signedDocId;
+        Database.update(req, AccessLevel.SYSTEM_MODE);
+
+        ESignAuditService.log(
+            req.Id, 'Signed',
+            req.Signer_Email__c, token,
+            clientIP, userAgent, 'SiteAsync'
+        );
+    }
+
+    // ── Decline ─────────────────────────────────────────────────────────────
+
+    private void processDecline() {
+        Signature_Request__c req = ESignTokenService.validateAndFetch(token);
+        if (req.Status__c != 'Pending' && req.Status__c != 'Viewed') return;
+
+        req.Status__c = 'Declined';
+        Database.update(req, AccessLevel.SYSTEM_MODE);
+
+        ESignAuditService.log(
+            req.Id, 'Declined',
+            req.Recipient_Email__c, token,
+            clientIP, userAgent, 'SiteAsync'
+        );
+    }
+
+    // ── Viewed ───────────────────────────────────────────────────────────────
+
+    private void processViewed() {
+        Signature_Request__c req = ESignTokenService.validateAndFetch(token);
+        if (req.Status__c != 'Pending' && req.Status__c != 'Viewed') return;
+
+        String newStatus = (req.Status__c == 'Pending') ? 'Viewed' : req.Status__c;
+        req.Status__c        = newStatus;
+        req.Last_Accessed__c = DateTime.now();
+        Database.update(req, AccessLevel.SYSTEM_MODE);
+
+        if (newStatus == 'Viewed') {
+            ESignAuditService.log(
+                req.Id, 'Viewed',
+                req.Recipient_Email__c, token,
+                clientIP, userAgent, 'SiteAsync'
+            );
+        }
+    }
+
+    // ── Helper ───────────────────────────────────────────────────────────────
+
+    private static Blob decodeBlob(String dataUri) {
+        String b64 = dataUri.contains(',') ? dataUri.substringAfter(',') : dataUri;
+        try {
+            return EncodingUtil.base64Decode(b64);
+        } catch (Exception e) {
+            throw new ESignException('VALIDATION_ERROR:Invalid signature image data');
+        }
+    }
+}

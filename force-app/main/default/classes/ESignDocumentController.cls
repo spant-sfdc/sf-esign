@@ -1,19 +1,14 @@
 /**
  * Controller for the public SignDocument Visualforce page.
  *
- * Security notes:
- *  - Declared `without sharing` because the Guest User has no access to
- *    Signature_Request__c records. The token is the sole access key.
- *  - All record queries are performed via ESignRequestSelector which
- *    uses explicit field lists — no SOQL injection is possible.
+ * Security model:
+ *  - `without sharing` — token is the sole access key; sharing rules don't apply.
+ *  - This controller performs NO DML. All state changes (Viewed, Signed, Declined)
+ *    are delegated to ESignSigningQueueable, which runs in system context and
+ *    holds the AllowsCallouts interface for the PDF stamp service.
+ *  - Signature data (base64) is passed to the Queueable; it is never persisted
+ *    directly from this class.
  *  - Rate limiting is enforced via a cache-backed counter per token.
- *  - All state changes (Viewed, Signed, Declined) are applied in this
- *    controller; no client-supplied values are trusted for status.
- *  - Signature data is accepted as a base64 data-URI and decoded server-side.
- *
- * Phase coverage: Phase 5 (page load, preview, error states)
- *                 Phase 6 (submit: signature save, signed document, status update)
- *                 Phase 10 (rate limiting, duplicate-submit prevention)
  */
 public without sharing class ESignDocumentController {
 
@@ -38,9 +33,9 @@ public without sharing class ESignDocumentController {
     // ─────────────────────────────────────────────────────────────────────────
 
     public ESignDocumentController() {
-        token       = ApexPages.currentPage().getParameters().get('token');
+        token        = ApexPages.currentPage().getParameters().get('token');
         isSubmitting = false;
-        pageState   = 'LOADING';
+        pageState    = 'LOADING';
         initialise();
     }
 
@@ -50,26 +45,18 @@ public without sharing class ESignDocumentController {
 
     private void initialise() {
         try {
-            // Phase 10: rate limit check before any record fetch
             checkRateLimit();
 
-            signRequest   = ESignTokenService.validateAndFetch(token);
+            signRequest    = ESignTokenService.validateAndFetch(token);
             documentBase64 = ESignDocumentService.getVersionBase64(
                 signRequest.Content_Version_Id__c);
 
-            // Mark as Viewed on first load
-            if (signRequest.Status__c == 'Pending') {
-                signRequest.Status__c     = 'Viewed';
-                signRequest.Last_Accessed__c = DateTime.now();
-                Database.update(signRequest, AccessLevel.SYSTEM_MODE);
-                ESignAuditService.log(
-                    signRequest.Id, 'Viewed',
-                    signRequest.Recipient_Email__c, token,
-                    getClientIP(), getUserAgent(), 'Site'
-                );
-            } else if (signRequest.Status__c == 'Viewed') {
-                signRequest.Last_Accessed__c = DateTime.now();
-                Database.update(signRequest, AccessLevel.SYSTEM_MODE);
+            // Mark Viewed / update last-accessed via Queueable (no guest DML)
+            if (signRequest.Status__c == 'Pending' || signRequest.Status__c == 'Viewed') {
+                System.enqueueJob(new ESignSigningQueueable(
+                    ESignSigningQueueable.ACTION_VIEWED,
+                    token, getClientIP(), getUserAgent()
+                ));
             }
 
             pageState = 'SIGNING';
@@ -78,26 +65,23 @@ public without sharing class ESignDocumentController {
             errorCode = e.getMessage();
             pageState = 'ERROR';
         } catch (Exception e) {
-            ESignAuditService.logError(null, e.getMessage(), null, token, 'Site');
             errorCode = 'UNEXPECTED_ERROR';
             pageState = 'ERROR';
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SUBMIT SIGNATURE (Phase 6)
+    // SUBMIT SIGNATURE
     // ─────────────────────────────────────────────────────────────────────────
 
     public PageReference submitSignature() {
-        // Prevent double-submission from browser refresh
         if (isSubmitting) return null;
         isSubmitting = true;
 
         try {
-            // Re-validate token — prevents replay on expired/cancelled requests
+            // Re-validate token (read-only) — prevents replay attacks
             signRequest = ESignTokenService.validateAndFetch(token);
 
-            // Validate signature data supplied by signer
             if (String.isBlank(signatureData) || String.isBlank(signatureType)) {
                 ApexPages.addMessage(new ApexPages.Message(
                     ApexPages.Severity.ERROR,
@@ -106,38 +90,14 @@ public without sharing class ESignDocumentController {
                 return null;
             }
 
-            // Decode signature image from base64 data-URI
-            Blob sigBlob = decodeSignatureBlob(signatureData);
+            // Delegate all DML + file creation to Queueable
+            System.enqueueJob(new ESignSigningQueueable(
+                token, signatureData, signatureType,
+                getClientIP(), getUserAgent()
+            ));
 
-            // Save signature image as ContentDocument
-            String sigImageDocId = ESignDocumentService.saveSignatureImage(
-                signRequest.Name, sigBlob);
-
-            // Update request to Signed state
-            signRequest.Status__c          = 'Signed';
-            signRequest.Signed_DateTime__c = DateTime.now();
-            signRequest.Signer_Email__c    = signRequest.Recipient_Email__c;
-            signRequest.Signature_Type__c  = signatureType;
-            signRequest.Signing_IP__c      = getClientIP();
-            signRequest.Signer_User_Agent__c = getUserAgent();
-            signRequest.Signature_Image_Id__c = sigImageDocId;
-            Database.update(signRequest, AccessLevel.SYSTEM_MODE);
-
-            // Create signed document version (Tier 1 + optional Tier 2 stamp)
-            String signedDocId = ESignDocumentService.createSignedVersion(
-                signRequest, sigBlob);
-
-            // Store signed document id on request
-            signRequest.Signed_Document_Id__c = signedDocId;
-            Database.update(signRequest, AccessLevel.SYSTEM_MODE);
-
-            // Audit: Signed
-            ESignAuditService.log(
-                signRequest.Id, 'Signed',
-                signRequest.Signer_Email__c, token,
-                getClientIP(), getUserAgent(), 'Site'
-            );
-
+            // Optimistically update in-memory state for VF rendered="" bindings
+            signRequest.Status__c = 'Signed';
             pageState = 'COMPLETE';
 
         } catch (ESignException e) {
@@ -145,9 +105,6 @@ public without sharing class ESignDocumentController {
             pageState    = 'ERROR';
             isSubmitting = false;
         } catch (Exception e) {
-            ESignAuditService.logError(
-                signRequest?.Id, e.getMessage(),
-                signRequest?.Recipient_Email__c, token, 'Site');
             errorCode    = 'UNEXPECTED_ERROR';
             pageState    = 'ERROR';
             isSubmitting = false;
@@ -162,14 +119,15 @@ public without sharing class ESignDocumentController {
     public PageReference declineSignature() {
         try {
             signRequest = ESignTokenService.validateAndFetch(token);
+
+            System.enqueueJob(new ESignSigningQueueable(
+                ESignSigningQueueable.ACTION_DECLINE,
+                token, getClientIP(), getUserAgent()
+            ));
+
             signRequest.Status__c = 'Declined';
-            Database.update(signRequest, AccessLevel.SYSTEM_MODE);
-            ESignAuditService.log(
-                signRequest.Id, 'Declined',
-                signRequest.Recipient_Email__c, token,
-                getClientIP(), getUserAgent(), 'Site'
-            );
             pageState = 'COMPLETE';
+
         } catch (ESignException e) {
             errorCode = e.getMessage();
             pageState = 'ERROR';
@@ -178,7 +136,7 @@ public without sharing class ESignDocumentController {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // RATE LIMITING (Phase 10)
+    // RATE LIMITING
     // ─────────────────────────────────────────────────────────────────────────
 
     private void checkRateLimit() {
@@ -192,8 +150,7 @@ public without sharing class ESignDocumentController {
             Object cached = Cache.Session.get(cacheKey);
             loadCount = (cached != null) ? (Integer) cached : 0;
         } catch (Exception cacheEx) {
-            // Session cache unavailable — fail open (don't block signer)
-            return;
+            return; // Session cache unavailable — fail open
         }
 
         if (loadCount >= maxLoads) {
@@ -209,18 +166,6 @@ public without sharing class ESignDocumentController {
     // ─────────────────────────────────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────────────────────────────────
-
-    private Blob decodeSignatureBlob(String dataUri) {
-        // dataUri format: "data:image/png;base64,<base64data>"
-        String base64Part = dataUri.contains(',')
-            ? dataUri.substringAfter(',')
-            : dataUri;
-        try {
-            return EncodingUtil.base64Decode(base64Part);
-        } catch (Exception e) {
-            throw new ESignException('VALIDATION_ERROR:Invalid signature image data');
-        }
-    }
 
     private String getClientIP() {
         return ApexPages.currentPage().getHeaders().get('X-Salesforce-SIP');
