@@ -37,9 +37,10 @@ public class ESignAuditService {
             String sourceSystem) {
 
         try {
-            insert buildAuditRecord(
-                requestId, eventType, actorEmail,
-                rawToken, ip, userAgent, sourceSystem, null
+            Database.insert(
+                buildAuditRecord(requestId, eventType, actorEmail,
+                    rawToken, ip, userAgent, sourceSystem, null),
+                AccessLevel.SYSTEM_MODE
             );
         } catch (Exception e) {
             // Swallow — audit must not break the calling transaction.
@@ -68,7 +69,7 @@ public class ESignAuditService {
                 requestId, 'Error', actorEmail,
                 rawToken, null, null, sourceSystem, errorDetail
             );
-            insert rec;
+            Database.insert(rec, AccessLevel.SYSTEM_MODE);
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR,
                 'ESignAuditService.logError failed: ' + e.getMessage());
@@ -87,13 +88,14 @@ public class ESignAuditService {
             Integer loadCount) {
 
         try {
-            insert buildAuditRecord(
-                requestId, 'Rate_Limited', actorEmail,
-                rawToken, ip, null, 'Site',
-                JSON.serialize(new Map<String, Object>{
-                    'loadCount' => loadCount,
-                    'threshold' => Integer.valueOf(System.Label.ESign_Rate_Limit_Per_Hour)
-                })
+            Database.insert(
+                buildAuditRecord(requestId, 'Rate_Limited', actorEmail,
+                    rawToken, ip, null, 'Site',
+                    JSON.serialize(new Map<String, Object>{
+                        'loadCount' => loadCount,
+                        'threshold' => Integer.valueOf(System.Label.ESign_Rate_Limit_Per_Hour)
+                    })),
+                AccessLevel.SYSTEM_MODE
             );
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR,
@@ -112,7 +114,7 @@ public class ESignAuditService {
     public static void logBulk(List<Signature_Audit__c> events) {
         if (events == null || events.isEmpty()) return;
         try {
-            insert events;
+            Database.insert(events, AccessLevel.SYSTEM_MODE);
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR,
                 'ESignAuditService.logBulk failed: ' + e.getMessage());

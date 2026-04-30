@@ -61,7 +61,7 @@ public without sharing class ESignDocumentController {
             if (signRequest.Status__c == 'Pending') {
                 signRequest.Status__c     = 'Viewed';
                 signRequest.Last_Accessed__c = DateTime.now();
-                update signRequest;
+                Database.update(signRequest, AccessLevel.SYSTEM_MODE);
                 ESignAuditService.log(
                     signRequest.Id, 'Viewed',
                     signRequest.Recipient_Email__c, token,
@@ -69,7 +69,7 @@ public without sharing class ESignDocumentController {
                 );
             } else if (signRequest.Status__c == 'Viewed') {
                 signRequest.Last_Accessed__c = DateTime.now();
-                update signRequest;
+                Database.update(signRequest, AccessLevel.SYSTEM_MODE);
             }
 
             pageState = 'SIGNING';
@@ -121,7 +121,7 @@ public without sharing class ESignDocumentController {
             signRequest.Signing_IP__c      = getClientIP();
             signRequest.Signer_User_Agent__c = getUserAgent();
             signRequest.Signature_Image_Id__c = sigImageDocId;
-            update signRequest;
+            Database.update(signRequest, AccessLevel.SYSTEM_MODE);
 
             // Create signed document version (Tier 1 + optional Tier 2 stamp)
             String signedDocId = ESignDocumentService.createSignedVersion(
@@ -129,7 +129,7 @@ public without sharing class ESignDocumentController {
 
             // Store signed document id on request
             signRequest.Signed_Document_Id__c = signedDocId;
-            update signRequest;
+            Database.update(signRequest, AccessLevel.SYSTEM_MODE);
 
             // Audit: Signed
             ESignAuditService.log(
@@ -163,7 +163,7 @@ public without sharing class ESignDocumentController {
         try {
             signRequest = ESignTokenService.validateAndFetch(token);
             signRequest.Status__c = 'Declined';
-            update signRequest;
+            Database.update(signRequest, AccessLevel.SYSTEM_MODE);
             ESignAuditService.log(
                 signRequest.Id, 'Declined',
                 signRequest.Recipient_Email__c, token,

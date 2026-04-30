@@ -103,7 +103,7 @@ public class ESignDocumentService {
             // ReasonForChange used as a searchable tag in Files
             ReasonForChange   = 'Signed via SF-eSign | Request: ' + req.Name
         );
-        insert signedCv;
+        Database.insert(signedCv, AccessLevel.SYSTEM_MODE);
 
         // Fetch auto-resolved ContentDocumentId
         String signedDocId = [
@@ -136,7 +136,7 @@ public class ESignDocumentService {
             VersionData  = signatureBlob,
             Description  = 'Signature image captured via SF-eSign for request ' + requestName
         );
-        insert sigCv;
+        Database.insert(sigCv, AccessLevel.SYSTEM_MODE);
 
         return [
             SELECT ContentDocumentId
@@ -159,11 +159,14 @@ public class ESignDocumentService {
         ];
         if (!existing.isEmpty()) return;
 
-        insert new ContentDocumentLink(
-            ContentDocumentId = contentDocId,
-            LinkedEntityId    = recordId,
-            ShareType         = 'V',
-            Visibility        = 'AllUsers'
+        Database.insert(
+            new ContentDocumentLink(
+                ContentDocumentId = contentDocId,
+                LinkedEntityId    = recordId,
+                ShareType         = 'V',
+                Visibility        = 'AllUsers'
+            ),
+            AccessLevel.SYSTEM_MODE
         );
     }
 

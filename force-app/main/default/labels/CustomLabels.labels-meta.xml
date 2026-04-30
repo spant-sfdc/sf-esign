@@ -7,7 +7,7 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>SF-eSign public site base URL</shortDescription>
-        <value>https://YOUR-DOMAIN.my.site.com/esign</value>
+        <value>https://techpulse5.my.site.com/esign</value>
     </labels>
 
     <labels>

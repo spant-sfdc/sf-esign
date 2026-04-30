@@ -3,6 +3,25 @@
     <custom>true</custom>
     <userLicense>Guest User License</userLicense>
 
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Signature_Request__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Signature_Audit__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+
     <classAccesses>
         <apexClass>ESignDocumentController</apexClass>
         <enabled>true</enabled>
