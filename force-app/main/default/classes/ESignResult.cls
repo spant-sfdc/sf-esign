@@ -4,14 +4,14 @@
  */
 public class ESignResult {
 
-    public Boolean success             { get; private set; }
-    public String  signatureRequestId  { get; private set; }
-    public String  signatureRequestName{ get; private set; }
-    public String  token               { get; private set; }
-    public String  signingUrl          { get; private set; }
-    public String  raiseCaseUrl        { get; private set; }
-    public String  errorMessage        { get; private set; }
-    public String  errorCode           { get; private set; }
+    @AuraEnabled public Boolean success             { get; private set; }
+    @AuraEnabled public String  signatureRequestId  { get; private set; }
+    @AuraEnabled public String  signatureRequestName{ get; private set; }
+    @AuraEnabled public String  token               { get; private set; }
+    @AuraEnabled public String  signingUrl          { get; private set; }
+    @AuraEnabled public String  raiseCaseUrl        { get; private set; }
+    @AuraEnabled public String  errorMessage        { get; private set; }
+    @AuraEnabled public String  errorCode           { get; private set; }
 
     private ESignResult() {}
 
