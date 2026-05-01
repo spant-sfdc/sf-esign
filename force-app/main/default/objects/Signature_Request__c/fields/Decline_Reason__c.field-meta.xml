@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Decline_Reason__c</fullName>
+    <description>Reason provided by the signer when declining to sign the document.</description>
+    <label>Decline Reason</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>false</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Not Interested</fullName><default>false</default><label>Not Interested</label></value>
+            <value><fullName>Wrong Document</fullName><default>false</default><label>Wrong Document</label></value>
+            <value><fullName>Technical Issue</fullName><default>false</default><label>Technical Issue</label></value>
+            <value><fullName>Other</fullName><default>false</default><label>Other</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

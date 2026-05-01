@@ -364,3 +364,68 @@
     .esign-actions  { flex-direction: column; align-items: stretch; }
     .esign-card     { padding: 32px 20px; }
 }
+
+/* ── Decline Modal ─────────────────────────────────────────────── */
+.esign-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.esign-modal {
+    background: #fff;
+    border-radius: 8px;
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+}
+.esign-modal__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #c23934;
+    margin-bottom: 8px;
+}
+.esign-modal__body {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 18px;
+}
+.esign-modal__field {
+    margin-bottom: 14px;
+}
+.esign-modal__label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 5px;
+}
+.esign-modal__select,
+.esign-modal__textarea {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #222;
+    background: #fafafa;
+}
+.esign-modal__select:focus,
+.esign-modal__textarea:focus {
+    outline: none;
+    border-color: #0070d2;
+    background: #fff;
+}
+.esign-modal__textarea { resize: vertical; }
+.esign-modal__actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+/* Hide the VF hidden decline submit button */
+.esign-hidden-btn { display: none !important; }

@@ -241,8 +241,10 @@
                 </div>
 
                 <!-- Hidden fields passed back to controller -->
-                <apex:inputHidden value="{!signatureData}" id="hidSigData"/>
-                <apex:inputHidden value="{!signatureType}" id="hidSigType"/>
+                <apex:inputHidden value="{!signatureData}"      id="hidSigData"/>
+                <apex:inputHidden value="{!signatureType}"      id="hidSigType"/>
+                <apex:inputHidden value="{!declineReason}"      id="hidDeclineReason"/>
+                <apex:inputHidden value="{!declineDescription}" id="hidDeclineDesc"/>
             </div>
 
             <!-- Action Buttons -->
@@ -257,13 +259,49 @@
                     styleClass="esign-btn esign-btn--primary esign-btn--lg"
                     id="btnSign"/>
 
+                <button type="button"
+                        class="esign-btn esign-btn--danger"
+                        onclick="ESign.showDeclineForm(
+                            '{!$Component.hidDeclineReason}',
+                            '{!$Component.hidDeclineDesc}',
+                            '{!$Component.btnDeclineSubmit}'
+                        )">
+                    Decline to Sign
+                </button>
+
+                <!-- Hidden: actual server submit for decline -->
                 <apex:commandButton
-                    value="Decline to Sign"
+                    value="__decline__"
                     action="{!declineSignature}"
-                    onclick="return confirm('Are you sure you want to decline? This action cannot be undone.');"
-                    styleClass="esign-btn esign-btn--danger"
-                    id="btnDecline"
+                    styleClass="esign-hidden-btn"
+                    id="btnDeclineSubmit"
                     immediate="true"/>
+            </div>
+
+            <!-- Decline Modal -->
+            <div id="esign-decline-modal" class="esign-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="esign-decline-heading">
+                <div class="esign-modal">
+                    <h2 id="esign-decline-heading" class="esign-modal__title">Decline to Sign</h2>
+                    <p class="esign-modal__body">Please let us know why you are declining. This action cannot be undone.</p>
+                    <div class="esign-modal__field">
+                        <label for="esignDeclineReasonSel" class="esign-modal__label">Reason <span aria-hidden="true">*</span></label>
+                        <select id="esignDeclineReasonSel" class="esign-modal__select">
+                            <option value="">Select a reason...</option>
+                            <option value="Not Interested">Not Interested</option>
+                            <option value="Wrong Document">Wrong Document</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="esign-modal__field">
+                        <label for="esignDeclineDescTa" class="esign-modal__label">Additional Details (optional)</label>
+                        <textarea id="esignDeclineDescTa" class="esign-modal__textarea" maxlength="500" rows="3" placeholder="Optional context..."></textarea>
+                    </div>
+                    <div class="esign-modal__actions">
+                        <button type="button" class="esign-btn esign-btn--danger" onclick="ESign.confirmDecline()">Confirm Decline</button>
+                        <button type="button" class="esign-btn esign-btn--ghost esign-btn--sm" onclick="ESign.cancelDecline()">Cancel</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Legal Notice -->
@@ -283,6 +321,17 @@
 </apex:outputPanel>
 
 <apex:includeScript value="{!URLFOR($Resource.ESign_Assets, 'js/esign.js')}"/>
+<script>
+    /* Prevent browser back navigation from returning to the signing form */
+    (function () {
+        if (window.history && window.history.pushState) {
+            window.history.pushState(null, '', window.location.href);
+            window.addEventListener('popstate', function () {
+                window.history.pushState(null, '', window.location.href);
+            });
+        }
+    }());
+</script>
 </body>
 </html>
 </apex:page>

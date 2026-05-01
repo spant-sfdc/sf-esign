@@ -19,16 +19,21 @@
     // ─────────────────────────────────────────
     // STATE
     // ─────────────────────────────────────────
-    var activeTab         = 'draw';
-    var drawCanvas        = null;
-    var drawCtx           = null;
-    var typedCanvas       = null;
-    var typedCtx          = null;
-    var isDrawing         = false;
-    var lastX             = 0;
-    var lastY             = 0;
-    var uploadDataUrl     = null;
-    var hasDrawnSomething = false;
+    var activeTab            = 'draw';
+    var drawCanvas           = null;
+    var drawCtx              = null;
+    var typedCanvas          = null;
+    var typedCtx             = null;
+    var isDrawing            = false;
+    var lastX                = 0;
+    var lastY                = 0;
+    var uploadDataUrl        = null;
+    var hasDrawnSomething    = false;
+
+    // Decline modal state
+    var _declineReasonFieldId = null;
+    var _declineDescFieldId   = null;
+    var _declineSubmitBtnId   = null;
 
     // ─────────────────────────────────────────
     // INIT
@@ -244,6 +249,54 @@
         }
 
         return true; // Allow VF form submission
+    };
+
+    // ─────────────────────────────────────────
+    // DECLINE MODAL
+    // ─────────────────────────────────────────
+    ESign.showDeclineForm = function (reasonFieldId, descFieldId, submitBtnId) {
+        _declineReasonFieldId = reasonFieldId;
+        _declineDescFieldId   = descFieldId;
+        _declineSubmitBtnId   = submitBtnId;
+
+        var modal = document.getElementById('esign-decline-modal');
+        if (modal) modal.style.display = 'flex';
+
+        // Reset inputs
+        var sel = document.getElementById('esignDeclineReasonSel');
+        var ta  = document.getElementById('esignDeclineDescTa');
+        if (sel) sel.value = '';
+        if (ta)  ta.value  = '';
+    };
+
+    ESign.confirmDecline = function () {
+        var sel = document.getElementById('esignDeclineReasonSel');
+        var ta  = document.getElementById('esignDeclineDescTa');
+
+        if (!sel || !sel.value) {
+            alert('Please select a reason before declining.');
+            return;
+        }
+
+        var reasonField = document.getElementById(_declineReasonFieldId);
+        var descField   = document.getElementById(_declineDescFieldId);
+        var submitBtn   = document.getElementById(_declineSubmitBtnId);
+
+        if (reasonField) reasonField.value = sel.value;
+        if (descField)   descField.value   = ta ? ta.value : '';
+
+        // Hide modal before server round-trip
+        var modal = document.getElementById('esign-decline-modal');
+        if (modal) modal.style.display = 'none';
+
+        if (submitBtn) {
+            submitBtn.click();
+        }
+    };
+
+    ESign.cancelDecline = function () {
+        var modal = document.getElementById('esign-decline-modal');
+        if (modal) modal.style.display = 'none';
     };
 
     // ─────────────────────────────────────────

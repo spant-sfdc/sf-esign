@@ -15,36 +15,61 @@ public without sharing class ESignSigningQueueable
 
     private final String action;
     private final String token;
-    private final String signatureData; // base64 data-URI (null for Decline/Viewed)
+    private final String signatureData;    // base64 data-URI (null for Decline/Viewed)
     private final String signatureType;
+    private final String declineReason;
+    private final String declineDescription;
     private final String clientIP;
     private final String userAgent;
 
     // ── Constructors ────────────────────────────────────────────────────────
 
+    // Sign constructor
     public ESignSigningQueueable(String token,
                                  String signatureData,
                                  String signatureType,
                                  String clientIP,
                                  String userAgent) {
-        this.action        = ACTION_SIGN;
-        this.token         = token;
-        this.signatureData = signatureData;
-        this.signatureType = signatureType;
-        this.clientIP      = clientIP;
-        this.userAgent     = userAgent;
+        this.action             = ACTION_SIGN;
+        this.token              = token;
+        this.signatureData      = signatureData;
+        this.signatureType      = signatureType;
+        this.declineReason      = null;
+        this.declineDescription = null;
+        this.clientIP           = clientIP;
+        this.userAgent          = userAgent;
     }
 
+    // Viewed constructor
     public ESignSigningQueueable(String action,
                                  String token,
                                  String clientIP,
                                  String userAgent) {
-        this.action        = action; // ACTION_DECLINE or ACTION_VIEWED
-        this.token         = token;
-        this.signatureData = null;
-        this.signatureType = null;
-        this.clientIP      = clientIP;
-        this.userAgent     = userAgent;
+        this.action             = action; // ACTION_VIEWED
+        this.token              = token;
+        this.signatureData      = null;
+        this.signatureType      = null;
+        this.declineReason      = null;
+        this.declineDescription = null;
+        this.clientIP           = clientIP;
+        this.userAgent          = userAgent;
+    }
+
+    // Decline constructor — carries reason + description
+    public ESignSigningQueueable(String action,
+                                 String token,
+                                 String declineReason,
+                                 String declineDescription,
+                                 String clientIP,
+                                 String userAgent) {
+        this.action             = action; // ACTION_DECLINE
+        this.token              = token;
+        this.signatureData      = null;
+        this.signatureType      = null;
+        this.declineReason      = declineReason;
+        this.declineDescription = declineDescription;
+        this.clientIP           = clientIP;
+        this.userAgent          = userAgent;
     }
 
     // ── execute ─────────────────────────────────────────────────────────────
@@ -112,6 +137,8 @@ public without sharing class ESignSigningQueueable
         if (req.Status__c != 'Pending' && req.Status__c != 'Viewed') return;
 
         req.Status__c = 'Declined';
+        if (String.isNotBlank(declineReason))      req.Decline_Reason__c      = declineReason;
+        if (String.isNotBlank(declineDescription)) req.Decline_Description__c = declineDescription;
         Database.update(req, AccessLevel.SYSTEM_MODE);
 
         ESignAuditService.log(

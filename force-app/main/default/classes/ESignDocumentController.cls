@@ -23,8 +23,10 @@ public without sharing class ESignDocumentController {
     public Boolean isSubmitting              { get; set; }
 
     // Signer-supplied inputs (set by VF page via apex:inputHidden)
-    public String signatureData  { get; set; } // base64 data-URI from canvas/upload
-    public String signatureType  { get; set; } // Draw | Type | Upload
+    public String signatureData       { get; set; } // base64 data-URI from canvas/upload
+    public String signatureType       { get; set; } // Draw | Type | Upload
+    public String declineReason       { get; set; }
+    public String declineDescription  { get; set; }
 
     private String token;
 
@@ -167,7 +169,8 @@ public without sharing class ESignDocumentController {
 
             System.enqueueJob(new ESignSigningQueueable(
                 ESignSigningQueueable.ACTION_DECLINE,
-                token, getClientIP(), getUserAgent()
+                token, declineReason, declineDescription,
+                getClientIP(), getUserAgent()
             ));
 
             signRequest.Status__c = 'Declined';
