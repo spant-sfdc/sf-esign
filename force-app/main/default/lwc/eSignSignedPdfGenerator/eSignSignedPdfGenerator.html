@@ -1,0 +1,51 @@
+<template>
+    <!--
+        Renders nothing when:  Status != Signed, or PDF already exists, or no state active.
+        Auto-generates the signed PDF when Status becomes Signed and Signed_Document_Id__c is blank.
+    -->
+    <template if:true={showPanel}>
+        <div class="panel">
+
+            <!-- Generating -->
+            <template if:true={isGenerating}>
+                <div class="row generating">
+                    <lightning-spinner size="small" alternative-text="Generating signed PDF"></lightning-spinner>
+                    <span class="label">{statusMessage}</span>
+                </div>
+            </template>
+
+            <!-- Complete -->
+            <template if:true={isComplete}>
+                <div class="row complete">
+                    <lightning-icon
+                        icon-name="utility:success"
+                        size="x-small"
+                        variant="success">
+                    </lightning-icon>
+                    <span class="label">Signed PDF ready —</span>
+                    <a href={fileUrl} target="_blank" class="view-link">View</a>
+                </div>
+            </template>
+
+            <!-- Error -->
+            <template if:true={hasError}>
+                <div class="row error">
+                    <lightning-icon
+                        icon-name="utility:error"
+                        size="x-small"
+                        variant="error">
+                    </lightning-icon>
+                    <span class="label">{errorMessage}</span>
+                    <lightning-button
+                        label="Retry"
+                        size="small"
+                        variant="brand"
+                        onclick={handleRetry}
+                        class="retry-btn">
+                    </lightning-button>
+                </div>
+            </template>
+
+        </div>
+    </template>
+</template>

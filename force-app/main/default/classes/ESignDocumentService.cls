@@ -36,18 +36,13 @@ public without sharing class ESignDocumentService {
      * Works with any ContentDocument — no DocGen assumptions.
      */
     public static ContentVersion getVersion(String contentVersionId) {
-        List<ContentVersion> versions = [
-            SELECT  Id,
-                    Title,
-                    FileExtension,
-                    FileType,
-                    VersionData,
-                    ContentDocumentId,
-                    ContentSize
-            FROM    ContentVersion
-            WHERE   Id = :contentVersionId
-            LIMIT   1
-        ];
+        // SYSTEM_MODE required so guest user can read VersionData blob content
+        List<ContentVersion> versions = Database.queryWithBinds(
+            'SELECT Id, Title, FileExtension, FileType, VersionData, ContentDocumentId, ContentSize'
+            + ' FROM ContentVersion WHERE Id = :cvId LIMIT 1',
+            new Map<String, Object>{ 'cvId' => contentVersionId },
+            AccessLevel.SYSTEM_MODE
+        );
         if (versions.isEmpty()) {
             throw new ESignException(
                 'DOCUMENT_ERROR:ContentVersion not found: ' + contentVersionId
@@ -103,25 +98,32 @@ public without sharing class ESignDocumentService {
 
         String auditManifest = buildAuditManifest(req);
 
+        System.debug(LoggingLevel.ERROR,
+            '[CP-CSV1] createSignedVersion. originalCvId=' + req.Content_Version_Id__c
+            + ' originalCdId=' + originalCv.ContentDocumentId
+            + ' signedBlobSize=' + signedDocBlob.size());
+
         ContentVersion signedCv = new ContentVersion(
-            ContentDocumentId = originalCv.ContentDocumentId,
-            Title             = originalCv.Title + ' [SIGNED - '
-                                    + Datetime.now().format('yyyy-MM-dd HH:mm') + ']',
-            PathOnClient      = originalCv.Title + '_signed.'
-                                    + originalCv.FileExtension,
-            VersionData       = signedDocBlob,
-            Description       = auditManifest,
-            // ReasonForChange used as a searchable tag in Files
-            ReasonForChange   = 'Signed via SF-eSign | Request: ' + req.Name
+            Title                  = originalCv.Title + ' [SIGNED - '
+                                         + Datetime.now().format('yyyy-MM-dd HH:mm') + ']',
+            PathOnClient           = originalCv.Title + '_signed.'
+                                         + originalCv.FileExtension,
+            VersionData            = signedDocBlob,
+            IsMajorVersion         = true,
+            FirstPublishLocationId = req.Id,
+            Description            = auditManifest,
+            ReasonForChange        = 'Signed via SF-eSign | Request: ' + req.Name
         );
         Database.insert(signedCv, AccessLevel.SYSTEM_MODE);
+        System.debug(LoggingLevel.ERROR, '[CP-CSV2] signed ContentVersion inserted. Id=' + signedCv.Id);
 
-        // Fetch auto-resolved ContentDocumentId
-        String signedDocId = [
-            SELECT ContentDocumentId
-            FROM   ContentVersion
-            WHERE  Id = :signedCv.Id
-        ].ContentDocumentId;
+        List<ContentVersion> signedCvResult = Database.queryWithBinds(
+            'SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvId',
+            new Map<String, Object>{ 'cvId' => signedCv.Id },
+            AccessLevel.SYSTEM_MODE
+        );
+        String signedDocId = signedCvResult[0].ContentDocumentId;
+        System.debug(LoggingLevel.ERROR, '[CP-CSV3] signedDocId=' + signedDocId);
 
         // Link signed document to the Signature_Request__c record (duplicate-safe)
         linkDocumentToRecord(signedDocId, req.Id);
@@ -143,20 +145,27 @@ public without sharing class ESignDocumentService {
      * Stored separately from the signed document for independent retrieval.
      * @return ContentDocumentId of the signature image
      */
-    public static String saveSignatureImage(String requestName, Blob signatureBlob) {
+    public static String saveSignatureImage(String requestName, Blob signatureBlob, String requestId) {
+        System.debug(LoggingLevel.ERROR,
+            '[CP-SIG1] saveSignatureImage START. blobSize=' + signatureBlob.size());
         ContentVersion sigCv = new ContentVersion(
-            Title        = 'Signature - ' + requestName,
-            PathOnClient = 'signature_' + requestName + '.png',
-            VersionData  = signatureBlob,
-            Description  = 'Signature image captured via SF-eSign for request ' + requestName
+            Title                  = 'Signature - ' + requestName,
+            PathOnClient           = 'signature_' + requestName + '.png',
+            VersionData            = signatureBlob,
+            FirstPublishLocationId = requestId,
+            Description            = 'Signature image captured via SF-eSign for request ' + requestName
         );
         Database.insert(sigCv, AccessLevel.SYSTEM_MODE);
+        System.debug(LoggingLevel.ERROR, '[CP-SIG2] ContentVersion inserted. Id=' + sigCv.Id);
 
-        return [
-            SELECT ContentDocumentId
-            FROM   ContentVersion
-            WHERE  Id = :sigCv.Id
-        ].ContentDocumentId;
+        List<ContentVersion> sigCvResult = Database.queryWithBinds(
+            'SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cvId',
+            new Map<String, Object>{ 'cvId' => sigCv.Id },
+            AccessLevel.SYSTEM_MODE
+        );
+        String docId = sigCvResult[0].ContentDocumentId;
+        System.debug(LoggingLevel.ERROR, '[CP-SIG3] ContentDocumentId=' + docId);
+        return docId;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -164,15 +173,17 @@ public without sharing class ESignDocumentService {
     // ─────────────────────────────────────────────────────────────────────────
 
     public static void linkDocumentToRecord(String contentDocId, String recordId) {
-        // Prevent duplicate links
-        List<ContentDocumentLink> existing = [
-            SELECT Id FROM ContentDocumentLink
-            WHERE  ContentDocumentId = :contentDocId
-            AND    LinkedEntityId    = :recordId
-            LIMIT  1
-        ];
-        if (!existing.isEmpty()) return;
-
+        System.debug(LoggingLevel.ERROR,
+            '[CP-CDL1] linkDocumentToRecord. docId=' + contentDocId + ' recId=' + recordId);
+        List<ContentDocumentLink> existing = Database.queryWithBinds(
+            'SELECT Id FROM ContentDocumentLink WHERE ContentDocumentId = :cdId AND LinkedEntityId = :recId LIMIT 1',
+            new Map<String, Object>{ 'cdId' => contentDocId, 'recId' => recordId },
+            AccessLevel.SYSTEM_MODE
+        );
+        if (!existing.isEmpty()) {
+            System.debug(LoggingLevel.ERROR, '[CP-CDL2] CDL already exists — skipping');
+            return;
+        }
         Database.insert(
             new ContentDocumentLink(
                 ContentDocumentId = contentDocId,
@@ -182,6 +193,12 @@ public without sharing class ESignDocumentService {
             ),
             AccessLevel.SYSTEM_MODE
         );
+        System.debug(LoggingLevel.ERROR, '[CP-CDL3] CDL inserted');
+    }
+
+    private static String escapeHtml(String s) {
+        if (s == null) return '';
+        return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;');
     }
 
     // ─────────────────────────────────────────────────────────────────────────

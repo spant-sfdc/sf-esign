@@ -38,6 +38,7 @@ public without sharing class ESignDocumentController {
         token        = ApexPages.currentPage().getParameters().get('token');
         isSubmitting = false;
         pageState    = 'LOADING';
+        System.debug(LoggingLevel.ERROR, '[CP-1] Controller constructed. token blank=' + String.isBlank(token));
         initialise();
     }
 
@@ -47,71 +48,60 @@ public without sharing class ESignDocumentController {
 
     private void initialise() {
         try {
-            System.debug(LoggingLevel.DEBUG,
-                'ESignDocumentController.initialise token=' + ESignTokenService.maskToken(token));
-
-            // Null/blank token — show "Invalid Link" without throwing
             if (String.isBlank(token)) {
+                System.debug(LoggingLevel.ERROR, '[CP-2] FAIL: token is blank');
                 errorCode = 'TOKEN_INVALID';
                 pageState = 'ERROR';
                 return;
             }
+            System.debug(LoggingLevel.ERROR, '[CP-2] Token received: ' + ESignTokenService.maskToken(token));
 
             checkRateLimit();
+            System.debug(LoggingLevel.ERROR, '[CP-3] Rate limit passed');
 
             signRequest = ESignTokenService.validateAndFetch(token);
-            System.debug(LoggingLevel.DEBUG,
-                'signRequest.Id=' + signRequest?.Id
-                + ' Status=' + signRequest?.Status__c
-                + ' ContentVersionId=' + signRequest?.Content_Version_Id__c);
+            System.debug(LoggingLevel.ERROR,
+                '[CP-4] Request fetched. Id=' + signRequest.Id
+                + ' Status=' + signRequest.Status__c
+                + ' ContentVersionId=' + signRequest.Content_Version_Id__c);
 
-            // Fetch document for preview — isolated so a content access failure
-            // does NOT prevent the signing form from loading
             try {
                 if (String.isNotBlank(signRequest.Content_Version_Id__c)) {
                     documentBase64 = ESignDocumentService.getVersionBase64(
                         signRequest.Content_Version_Id__c);
                 }
-                System.debug(LoggingLevel.DEBUG,
-                    'documentBase64 length=' + (documentBase64 != null ? documentBase64.length() : 0));
+                System.debug(LoggingLevel.ERROR,
+                    '[CP-5] documentBase64 length=' + (documentBase64 != null ? documentBase64.length() : 0));
             } catch (Exception docEx) {
-                System.debug(LoggingLevel.WARN,
-                    'Document preview unavailable: ' + docEx.getMessage()
-                    + ' | ' + docEx.getStackTraceString());
-                // documentBase64 stays null — VF page shows placeholder
+                System.debug(LoggingLevel.ERROR,
+                    '[CP-5] FAIL document preview: ' + docEx.getMessage());
             }
 
-            // Mark Viewed / update last-accessed via Queueable (no guest DML)
             try {
                 if (signRequest.Status__c == 'Pending' || signRequest.Status__c == 'Viewed') {
                     System.enqueueJob(new ESignSigningQueueable(
                         ESignSigningQueueable.ACTION_VIEWED,
                         token, getClientIP(), getUserAgent()
                     ));
+                    System.debug(LoggingLevel.ERROR, '[CP-6] Viewed queueable enqueued');
                 }
             } catch (Exception qEx) {
-                System.debug(LoggingLevel.WARN, 'Viewed enqueue failed (non-critical): ' + qEx.getMessage());
+                System.debug(LoggingLevel.ERROR, '[CP-6] FAIL Viewed enqueue: ' + qEx.getMessage());
             }
 
             pageState = 'SIGNING';
+            System.debug(LoggingLevel.ERROR, '[CP-7] pageState=SIGNING');
 
         } catch (ESignException e) {
-            System.debug(LoggingLevel.ERROR,
-                'ESignDocumentController ESignException: ' + e.getMessage());
-            // Normalise: TOKEN_MISSING and unknown DOCUMENT_ERROR codes map to a
-            // known VF-renderable error code so a panel always shows.
+            System.debug(LoggingLevel.ERROR, '[CP-ERR] ESignException: ' + e.getMessage());
             String code = e.getMessage();
-            if (code == 'TOKEN_MISSING' || String.isBlank(code)) {
-                code = 'TOKEN_INVALID';
-            } else if (code.startsWith('DOCUMENT_ERROR')) {
-                code = 'UNEXPECTED_ERROR';
-            }
+            if (code == 'TOKEN_MISSING' || String.isBlank(code)) { code = 'TOKEN_INVALID'; }
+            else if (code.startsWith('DOCUMENT_ERROR')) { code = 'UNEXPECTED_ERROR'; }
             errorCode = code;
             pageState = 'ERROR';
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR,
-                'ESignDocumentController unexpected: ' + e.getMessage()
-                + ' | ' + e.getStackTraceString());
+                '[CP-ERR] Unexpected: ' + e.getMessage() + ' | ' + e.getStackTraceString());
             errorCode = 'UNEXPECTED_ERROR';
             pageState = 'ERROR';
         }
@@ -122,12 +112,16 @@ public without sharing class ESignDocumentController {
     // ─────────────────────────────────────────────────────────────────────────
 
     public PageReference submitSignature() {
+        System.debug(LoggingLevel.ERROR, '[CP-8] submitSignature called. isSubmitting=' + isSubmitting);
         if (isSubmitting) return null;
         isSubmitting = true;
 
         try {
-            // Re-validate token (read-only) — prevents replay attacks
             signRequest = ESignTokenService.validateAndFetch(token);
+            System.debug(LoggingLevel.ERROR,
+                '[CP-9] Re-validated. sigDataBlank=' + String.isBlank(signatureData)
+                + ' sigType=' + signatureType
+                + ' sigDataLen=' + (signatureData != null ? signatureData.length() : 0));
 
             if (String.isBlank(signatureData) || String.isBlank(signatureType)) {
                 ApexPages.addMessage(new ApexPages.Message(
@@ -137,21 +131,24 @@ public without sharing class ESignDocumentController {
                 return null;
             }
 
-            // Delegate all DML + file creation to Queueable
             System.enqueueJob(new ESignSigningQueueable(
                 token, signatureData, signatureType,
                 getClientIP(), getUserAgent()
             ));
+            System.debug(LoggingLevel.ERROR, '[CP-10] Sign queueable enqueued');
 
-            // Optimistically update in-memory state for VF rendered="" bindings
             signRequest.Status__c = 'Signed';
             pageState = 'COMPLETE';
+            System.debug(LoggingLevel.ERROR, '[CP-11] submitSignature complete. pageState=COMPLETE');
 
         } catch (ESignException e) {
+            System.debug(LoggingLevel.ERROR, '[CP-ERR] submitSignature ESignException: ' + e.getMessage());
             errorCode    = e.getMessage();
             pageState    = 'ERROR';
             isSubmitting = false;
         } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR,
+                '[CP-ERR] submitSignature Exception: ' + e.getMessage() + ' | ' + e.getStackTraceString());
             errorCode    = 'UNEXPECTED_ERROR';
             pageState    = 'ERROR';
             isSubmitting = false;
@@ -164,20 +161,32 @@ public without sharing class ESignDocumentController {
     // ─────────────────────────────────────────────────────────────────────────
 
     public PageReference declineSignature() {
+        System.debug(LoggingLevel.ERROR,
+            '[CP-8D] declineSignature called. reason=' + declineReason
+            + ' descBlank=' + String.isBlank(declineDescription));
         try {
             signRequest = ESignTokenService.validateAndFetch(token);
+            System.debug(LoggingLevel.ERROR, '[CP-9D] Re-validated for decline');
 
             System.enqueueJob(new ESignSigningQueueable(
                 ESignSigningQueueable.ACTION_DECLINE,
                 token, declineReason, declineDescription,
                 getClientIP(), getUserAgent()
             ));
+            System.debug(LoggingLevel.ERROR, '[CP-10D] Decline queueable enqueued');
 
             signRequest.Status__c = 'Declined';
             pageState = 'COMPLETE';
+            System.debug(LoggingLevel.ERROR, '[CP-11D] declineSignature complete');
 
         } catch (ESignException e) {
+            System.debug(LoggingLevel.ERROR, '[CP-ERR] declineSignature ESignException: ' + e.getMessage());
             errorCode = e.getMessage();
+            pageState = 'ERROR';
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR,
+                '[CP-ERR] declineSignature Exception: ' + e.getMessage() + ' | ' + e.getStackTraceString());
+            errorCode = 'UNEXPECTED_ERROR';
             pageState = 'ERROR';
         }
         return null;
@@ -245,5 +254,227 @@ public without sharing class ESignDocumentController {
     }
     public Boolean isDeclinedComplete {
         get { return isCompleteState && signRequest?.Status__c == 'Declined'; }
+    }
+
+    // Expose token to the VF page for use in JS remoting calls on the success screen.
+    // The token is already in the browser URL, so exposing it here adds no new surface.
+    public String signingToken { get { return token; } }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // REMOTE ACTIONS — called from SignDocument.page success screen JavaScript
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Polls for signing completion. Returns signing data for PDF generation once
+     * the ESignSigningQueueable has run (Status = Signed AND Signature_Image_Id__c set).
+     * Returns { ready: false } until then; { ready: false, alreadyDone: true } if a
+     * signed PDF was already generated (idempotency).
+     */
+    @RemoteAction
+    public static Map<String, Object> pollSigningData(String token) {
+        try {
+            if (String.isBlank(token)) return new Map<String, Object>{ 'ready' => false };
+            List<Signature_Request__c> reqs = Database.queryWithBinds(
+                'SELECT Id, Status__c, Name, Recipient_Name__c,'
+                + ' Signer_Email__c, Recipient_Email__c, Signed_DateTime__c,'
+                + ' Signature_Type__c, Signing_IP__c, Content_Version_Id__c,'
+                + ' Signature_Image_Id__c, Related_Record_Id__c, Signed_Document_Id__c'
+                + ' FROM Signature_Request__c WHERE Secure_Token__c = :tok LIMIT 1',
+                new Map<String, Object>{ 'tok' => token },
+                AccessLevel.SYSTEM_MODE
+            );
+            if (reqs.isEmpty()) return new Map<String, Object>{ 'ready' => false };
+            Signature_Request__c req = reqs[0];
+
+            if (String.isNotBlank(req.Signed_Document_Id__c)) {
+                return new Map<String, Object>{ 'ready' => false, 'alreadyDone' => true };
+            }
+            if (req.Status__c != 'Signed' || String.isBlank(req.Signature_Image_Id__c)) {
+                return new Map<String, Object>{ 'ready' => false };
+            }
+
+            // Fetch original document bytes (≤ 10 MB)
+            String originalBase64 = null;
+            String originalType   = null;
+            if (String.isNotBlank(req.Content_Version_Id__c)) {
+                List<ContentVersion> cvs = Database.queryWithBinds(
+                    'SELECT VersionData, ContentSize, FileType FROM ContentVersion'
+                    + ' WHERE Id = :cvId LIMIT 1',
+                    new Map<String, Object>{ 'cvId' => req.Content_Version_Id__c },
+                    AccessLevel.SYSTEM_MODE
+                );
+                if (!cvs.isEmpty() && cvs[0].VersionData != null
+                        && cvs[0].ContentSize != null && cvs[0].ContentSize <= 10485760) {
+                    originalBase64 = EncodingUtil.base64Encode(cvs[0].VersionData);
+                    originalType   = cvs[0].FileType;
+                }
+            }
+
+            // Fetch signature image bytes (≤ 512 KB)
+            String sigImageBase64 = null;
+            List<ContentVersion> sigCvs = Database.queryWithBinds(
+                'SELECT VersionData, ContentSize FROM ContentVersion'
+                + ' WHERE ContentDocumentId = :docId AND IsLatest = true LIMIT 1',
+                new Map<String, Object>{ 'docId' => req.Signature_Image_Id__c },
+                AccessLevel.SYSTEM_MODE
+            );
+            if (!sigCvs.isEmpty() && sigCvs[0].VersionData != null
+                    && sigCvs[0].ContentSize != null && sigCvs[0].ContentSize <= 524288) {
+                sigImageBase64 = EncodingUtil.base64Encode(sigCvs[0].VersionData);
+            }
+
+            String signerEmail = String.isNotBlank(req.Signer_Email__c)
+                ? req.Signer_Email__c : req.Recipient_Email__c;
+            String signedAt = req.Signed_DateTime__c != null
+                ? req.Signed_DateTime__c.format('dd MMMM yyyy HH:mm z') : null;
+
+            System.debug(LoggingLevel.INFO,
+                '[VF-POLL] Data ready. reqId=' + req.Id
+                + ' originalType=' + originalType
+                + ' origSize=' + (originalBase64 != null ? originalBase64.length() : 0)
+                + ' sigImgSize=' + (sigImageBase64 != null ? sigImageBase64.length() : 0));
+
+            // Mark Processing before returning data — ensures status is tracked
+            // even if the tab closes before the client can call updatePdfStatus.
+            try {
+                Database.update(new Signature_Request__c(
+                    Id                       = req.Id,
+                    PDF_Generation_Status__c = 'Processing'
+                ), AccessLevel.SYSTEM_MODE);
+            } catch (Exception updateEx) {
+                System.debug(LoggingLevel.WARN,
+                    '[VF-POLL] Could not set Processing status: ' + updateEx.getMessage());
+            }
+
+            return new Map<String, Object>{
+                'ready'          => true,
+                'reqId'          => req.Id,
+                'reqName'        => req.Name,
+                'signerName'     => req.Recipient_Name__c,
+                'signerEmail'    => signerEmail,
+                'signedDateTime' => signedAt,
+                'sigMethod'      => req.Signature_Type__c,
+                'ipAddress'      => req.Signing_IP__c,
+                'originalBase64' => originalBase64,
+                'originalType'   => originalType,
+                'sigImageBase64' => sigImageBase64
+            };
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, '[VF-POLL] Error: ' + e.getMessage());
+            return new Map<String, Object>{ 'ready' => false };
+        }
+    }
+
+    /**
+     * Saves the client-generated signed PDF, links it to both the Signature Request and
+     * its related record, updates Signed_Document_Id__c, and enqueues the confirmation email.
+     * Idempotent: returns the existing contentDocId if already saved.
+     */
+    @RemoteAction
+    public static Map<String, Object> savePdfAndNotify(
+            String token, String base64Pdf, String fileName) {
+        String failReqId = null; // captured early so the catch block can mark Failed
+        try {
+            if (String.isBlank(token) || String.isBlank(base64Pdf)) {
+                throw new ESignException('VALIDATION_ERROR:Missing required parameters');
+            }
+            List<Signature_Request__c> reqs = Database.queryWithBinds(
+                'SELECT Id, Status__c, Name, Related_Record_Id__c, Signed_Document_Id__c,'
+                + ' Recipient_Email__c, Signer_Email__c, Recipient_Name__c, Signed_DateTime__c'
+                + ' FROM Signature_Request__c WHERE Secure_Token__c = :tok LIMIT 1',
+                new Map<String, Object>{ 'tok' => token },
+                AccessLevel.SYSTEM_MODE
+            );
+            if (reqs.isEmpty()) throw new ESignException('VALIDATION_ERROR:Request not found');
+            Signature_Request__c req = reqs[0];
+            failReqId = req.Id;
+
+            if (req.Status__c != 'Signed') {
+                throw new ESignException('VALIDATION_ERROR:Request is not in Signed status');
+            }
+            if (String.isNotBlank(req.Signed_Document_Id__c)) {
+                return new Map<String, Object>{ 'contentDocId' => req.Signed_Document_Id__c };
+            }
+
+            // Save PDF to Files
+            String contentDocId = PdfStorageService.savePdf(
+                base64Pdf, String.isNotBlank(fileName) ? fileName : 'SignedDocument', req.Id);
+            base64Pdf = null; // release heap
+
+            PdfStorageService.linkDocument(contentDocId, req.Id);
+            if (String.isNotBlank(req.Related_Record_Id__c)) {
+                PdfStorageService.linkDocument(contentDocId, req.Related_Record_Id__c);
+            }
+
+            req.Signed_Document_Id__c    = contentDocId;
+            req.PDF_Generation_Status__c = 'Complete';
+            req.PDF_Generation_Error__c  = null;
+            // Confirmation email is triggered by the AFTER UPDATE trigger on
+            // Signed_Document_Id__c transition (null → value). No enqueue here.
+            Database.update(req, AccessLevel.SYSTEM_MODE);
+
+            System.debug(LoggingLevel.ERROR,
+                '[VF-SAVE] Complete. contentDocId=' + contentDocId + ' reqId=' + req.Id
+                + ' — trigger will handle confirmation email.');
+            return new Map<String, Object>{ 'contentDocId' => contentDocId };
+
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR,
+                '[VF-SAVE] Error: ' + e.getMessage() + ' | ' + e.getStackTraceString());
+            if (failReqId != null) {
+                try {
+                    Database.update(new Signature_Request__c(
+                        Id                       = failReqId,
+                        PDF_Generation_Status__c = 'Failed',
+                        PDF_Generation_Error__c  = (e.getMessage() + '\n' + e.getStackTraceString())
+                                                   .left(32768)
+                    ), AccessLevel.SYSTEM_MODE);
+                } catch (Exception statusEx) {
+                    System.debug(LoggingLevel.ERROR,
+                        '[VF-SAVE] Could not mark Failed status: ' + statusEx.getMessage());
+                }
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Fire-and-forget status update called by SignDocument.page JS at each generation stage.
+     * Provides server-side visibility into client-side generation progress and failures.
+     */
+    @RemoteAction
+    public static void updatePdfStatus(String token, String status, String errorDetail) {
+        try {
+            if (String.isBlank(token) || String.isBlank(status)) return;
+            List<Signature_Request__c> reqs = Database.queryWithBinds(
+                'SELECT Id FROM Signature_Request__c WHERE Secure_Token__c = :tok LIMIT 1',
+                new Map<String, Object>{ 'tok' => token },
+                AccessLevel.SYSTEM_MODE
+            );
+            if (reqs.isEmpty()) return;
+            Signature_Request__c req = new Signature_Request__c(Id = reqs[0].Id);
+            req.PDF_Generation_Status__c = status;
+            if (String.isNotBlank(errorDetail)) {
+                req.PDF_Generation_Error__c = errorDetail.left(32768);
+            } else if (status != 'Failed') {
+                req.PDF_Generation_Error__c = null;
+            }
+            Database.update(req, AccessLevel.SYSTEM_MODE);
+            System.debug(LoggingLevel.INFO, '[VF-STATUS] Updated to: ' + status);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR,
+                '[VF-STATUS] Update failed: ' + e.getMessage());
+        }
+    }
+
+    public String documentUrl {
+        get {
+            if (signRequest != null && String.isNotBlank(signRequest.Document_Id__c)) {
+                return '/sfc/servlet.shepherd/document/download/'
+                       + signRequest.Document_Id__c
+                       + '?operationContext=DELIVERY';
+            }
+            return null;
+        }
     }
 }

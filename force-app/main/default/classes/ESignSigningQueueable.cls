@@ -14,13 +14,13 @@ public without sharing class ESignSigningQueueable
     public  static final String ACTION_VIEWED  = 'Viewed';
 
     private final String action;
-    private final String token;
-    private final String signatureData;    // base64 data-URI (null for Decline/Viewed)
+    private final String token;           // also certCvId when ACTION_RENDER_CERT
+    private final String signatureData;
     private final String signatureType;
     private final String declineReason;
     private final String declineDescription;
-    private final String clientIP;
-    private final String userAgent;
+    private final String clientIP;        // also reqId when ACTION_RENDER_CERT
+    private final String userAgent;       // also relatedRecordId when ACTION_RENDER_CERT
 
     // ── Constructors ────────────────────────────────────────────────────────
 
@@ -40,12 +40,12 @@ public without sharing class ESignSigningQueueable
         this.userAgent          = userAgent;
     }
 
-    // Viewed constructor
+    // Viewed / RenderCert constructor — token=certCvId, clientIP=reqId, userAgent=relRecId when RenderCert
     public ESignSigningQueueable(String action,
                                  String token,
                                  String clientIP,
                                  String userAgent) {
-        this.action             = action; // ACTION_VIEWED
+        this.action             = action;
         this.token              = token;
         this.signatureData      = null;
         this.signatureType      = null;
@@ -75,6 +75,9 @@ public without sharing class ESignSigningQueueable
     // ── execute ─────────────────────────────────────────────────────────────
 
     public void execute(QueueableContext ctx) {
+        System.debug(LoggingLevel.ERROR,
+            '[CP-Q1] Queueable execute START. action=' + action
+            + ' token=' + ESignTokenService.maskToken(token));
         try {
             if (action == ACTION_VIEWED) {
                 processViewed();
@@ -83,69 +86,100 @@ public without sharing class ESignSigningQueueable
             } else {
                 processSign();
             }
+            System.debug(LoggingLevel.ERROR, '[CP-Q2] Queueable execute COMPLETE. action=' + action);
         } catch (ESignException e) {
-            ESignAuditService.logError(null, e.getMessage(), null, token, 'SiteAsync');
+            System.debug(LoggingLevel.ERROR,
+                '[CP-QERR] ESignException action=' + action + ': ' + e.getMessage()
+                + ' | ' + e.getStackTraceString());
+            tryLogError(e.getMessage());
         } catch (Exception e) {
-            ESignAuditService.logError(null, 'Queueable failed: ' + e.getMessage(),
-                null, token, 'SiteAsync');
+            System.debug(LoggingLevel.ERROR,
+                '[CP-QERR] Exception action=' + action + ': ' + e.getMessage()
+                + ' | ' + e.getStackTraceString());
+            tryLogError('Queueable failed: ' + e.getMessage());
+        }
+    }
+
+    private void tryLogError(String detail) {
+        try {
+            List<Signature_Request__c> reqs = Database.queryWithBinds(
+                'SELECT Id, Recipient_Email__c FROM Signature_Request__c WHERE Secure_Token__c = :tok LIMIT 1',
+                new Map<String, Object>{ 'tok' => token },
+                AccessLevel.SYSTEM_MODE
+            );
+            String reqId    = reqs.isEmpty() ? null : reqs[0].Id;
+            String reqEmail = reqs.isEmpty() ? null : reqs[0].Recipient_Email__c;
+            ESignAuditService.logError(reqId, detail, reqEmail, token, 'SiteAsync');
+        } catch (Exception ignored) {
+            System.debug(LoggingLevel.ERROR,
+                'ESignSigningQueueable.tryLogError failed: ' + ignored.getMessage());
         }
     }
 
     // ── Sign ────────────────────────────────────────────────────────────────
 
     private void processSign() {
+        System.debug(LoggingLevel.ERROR, '[CP-S1] processSign START');
         Signature_Request__c req = ESignTokenService.validateAndFetch(token);
+        System.debug(LoggingLevel.ERROR,
+            '[CP-S2] Request fetched. Id=' + req.Id + ' Status=' + req.Status__c
+            + ' ContentVersionId=' + req.Content_Version_Id__c);
 
-        // Duplicate-sign guard — token validation ensures Pending/Viewed only
-        // but a race between two simultaneous submits needs a hard check here
-        if (req.Status__c != 'Pending' && req.Status__c != 'Viewed') return;
+        if (req.Status__c != 'Pending' && req.Status__c != 'Viewed') {
+            System.debug(LoggingLevel.ERROR, '[CP-S3] ABORT: status=' + req.Status__c + ' not signable');
+            return;
+        }
 
         Blob sigBlob = decodeBlob(signatureData);
+        System.debug(LoggingLevel.ERROR, '[CP-S4] sigBlob size=' + sigBlob.size());
 
-        // Save signature image
-        String sigImageDocId = ESignDocumentService.saveSignatureImage(
-            req.Name, sigBlob);
+        String sigImageDocId = ESignDocumentService.saveSignatureImage(req.Name, sigBlob, req.Id);
+        System.debug(LoggingLevel.ERROR, '[CP-S5] sigImageDocId=' + sigImageDocId);
 
-        // Update request → Signed (first write)
-        req.Status__c             = 'Signed';
-        req.Signed_DateTime__c    = DateTime.now();
-        req.Signer_Email__c       = req.Recipient_Email__c;
-        req.Signature_Type__c     = signatureType;
-        req.Signing_IP__c         = clientIP;
-        req.Signer_User_Agent__c  = userAgent;
-        req.Signature_Image_Id__c = sigImageDocId;
+        ESignDocumentService.linkDocumentToRecord(sigImageDocId, req.Id);
+        System.debug(LoggingLevel.ERROR, '[CP-S6] sig image linked to request');
+
+        req.Status__c                = 'Signed';
+        req.Signed_DateTime__c       = DateTime.now();
+        req.Signer_Email__c          = req.Recipient_Email__c;
+        req.Signature_Type__c        = signatureType;
+        req.Signing_IP__c            = clientIP;
+        req.Signer_User_Agent__c     = userAgent;
+        req.Signature_Image_Id__c    = sigImageDocId;
+        req.PDF_Generation_Status__c = 'Pending';
+        req.PDF_Generation_Error__c  = null;
         Database.update(req, AccessLevel.SYSTEM_MODE);
+        System.debug(LoggingLevel.ERROR,
+            '[CP-S7] Status=Signed PDF_Generation_Status=Pending reqId=' + req.Id);
 
-        // Create signed document version (Tier 1 always; Tier 2 callout if configured)
-        String signedDocId = ESignDocumentService.createSignedVersion(req, sigBlob);
-
-        // Store signed document id on request (second write)
-        req.Signed_Document_Id__c = signedDocId;
-        Database.update(req, AccessLevel.SYSTEM_MODE);
-
-        ESignAuditService.log(
-            req.Id, 'Signed',
-            req.Signer_Email__c, token,
-            clientIP, userAgent, 'SiteAsync'
-        );
+        ESignAuditService.log(req.Id, 'Signed', req.Signer_Email__c, token, clientIP, userAgent, 'SiteAsync');
+        System.debug(LoggingLevel.ERROR, '[CP-S10] Audit log written. processSign DONE');
     }
 
     // ── Decline ─────────────────────────────────────────────────────────────
 
     private void processDecline() {
+        System.debug(LoggingLevel.ERROR,
+            '[CP-D1] processDecline START. reason=' + declineReason
+            + ' descBlank=' + String.isBlank(declineDescription));
         Signature_Request__c req = ESignTokenService.validateAndFetch(token);
-        if (req.Status__c != 'Pending' && req.Status__c != 'Viewed') return;
+        System.debug(LoggingLevel.ERROR,
+            '[CP-D2] Request fetched. Id=' + req.Id + ' Status=' + req.Status__c);
+
+        if (req.Status__c != 'Pending' && req.Status__c != 'Viewed') {
+            System.debug(LoggingLevel.ERROR, '[CP-D3] ABORT: status=' + req.Status__c);
+            return;
+        }
 
         req.Status__c = 'Declined';
         if (String.isNotBlank(declineReason))      req.Decline_Reason__c      = declineReason;
         if (String.isNotBlank(declineDescription)) req.Decline_Description__c = declineDescription;
         Database.update(req, AccessLevel.SYSTEM_MODE);
+        System.debug(LoggingLevel.ERROR,
+            '[CP-D4] DML done. Status=Declined Reason=' + req.Decline_Reason__c);
 
-        ESignAuditService.log(
-            req.Id, 'Declined',
-            req.Recipient_Email__c, token,
-            clientIP, userAgent, 'SiteAsync'
-        );
+        ESignAuditService.log(req.Id, 'Declined', req.Recipient_Email__c, token, clientIP, userAgent, 'SiteAsync');
+        System.debug(LoggingLevel.ERROR, '[CP-D5] processDecline DONE');
     }
 
     // ── Viewed ───────────────────────────────────────────────────────────────

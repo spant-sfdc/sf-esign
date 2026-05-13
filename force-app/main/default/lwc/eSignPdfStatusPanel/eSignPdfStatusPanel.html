@@ -1,0 +1,47 @@
+<template>
+    <lightning-card title="PDF Generation" icon-name="doctype:pdf">
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+
+            <template if:true={record.data}>
+                <!-- Status row -->
+                <div class="slds-grid slds-gutters slds-grid_align-spread slds-m-bottom_x-small">
+                    <span class="slds-text-title slds-col">Generation Status</span>
+                    <span class={statusBadgeClass}>{pdfStatus}</span>
+                </div>
+
+                <!-- Signed document link -->
+                <template if:true={hasSignedDoc}>
+                    <div class="slds-m-bottom_x-small">
+                        <a href={signedDocUrl} target="_blank" class="doc-link">
+                            &#128196; View Signed Document
+                        </a>
+                    </div>
+                </template>
+
+                <!-- Error detail (only shown when Failed) -->
+                <template if:true={hasError}>
+                    <div class="error-box">
+                        <p class="slds-text-title_caps slds-m-bottom_xx-small error-label">
+                            Last Error
+                        </p>
+                        <pre class="error-pre">{errorDetail}</pre>
+                    </div>
+                </template>
+
+                <!-- No status yet -->
+                <template if:false={hasStatus}>
+                    <p class="slds-text-color_weak slds-text-body_small">
+                        PDF generation has not started.
+                    </p>
+                </template>
+            </template>
+
+            <template if:true={record.error}>
+                <p class="slds-text-color_error slds-text-body_small">
+                    Unable to load PDF generation status.
+                </p>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>

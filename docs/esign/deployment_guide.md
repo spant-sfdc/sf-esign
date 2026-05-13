@@ -26,7 +26,25 @@ sf project deploy start --source-dir force-app --target-org nonprofitorg
 
 ---
 
-## Step 2: Deploy Static Resources as ZIP
+## Step 2: Deploy pdf-lib and html2canvas Static Resources
+
+**Important:** The `pdfLib.js` and `html2canvas.js` files in this repository are placeholders.
+Download the real minified bundles before deploying:
+
+```bash
+# Download pdf-lib (client-side PDF generation)
+curl -o force-app/main/default/staticresources/pdfLib.js \
+  https://unpkg.com/pdf-lib/dist/pdf-lib.min.js
+
+# Download html2canvas (HTML-to-canvas for certificate page rendering)
+curl -o force-app/main/default/staticresources/html2canvas.js \
+  https://html2canvas.hertzen.com/dist/html2canvas.min.js
+
+# Re-deploy static resources
+sf project deploy start \
+  --source-dir force-app/main/default/staticresources \
+  --target-org YOUR_ORG_ALIAS
+```
 
 The `ESign_Assets` static resource must be deployed as a ZIP file.
 The source-dir deploy above handles this automatically via SFDX.
@@ -160,11 +178,17 @@ if (!audits.isEmpty()) {
 ## Deployment Checklist
 
 - [ ] Objects deployed: `Signature_Request__c`, `Signature_Audit__c`
+- [ ] New fields deployed: `PDF_Generation_Status__c`, `PDF_Generation_Error__c`, `Confirmation_Email_Status__c`, `Confirmation_Email_Error__c`
 - [ ] Custom Labels updated with org-specific values
 - [ ] Permission Set assigned to admins
 - [ ] Salesforce Site created and activated
 - [ ] Guest User profile permissions set
-- [ ] Static resources deployed as ZIP
+- [ ] `pdfLib.js` replaced with real pdf-lib.min.js bundle
+- [ ] `html2canvas.js` replaced with real html2canvas.min.js bundle
+- [ ] Static resources deployed
 - [ ] Expiry scheduler started
+- [ ] Org-Wide Email Address configured (Display Name matches `ESign_Org_Display_Name` label exactly)
+- [ ] FLS granted for `Confirmation_Email_Status__c` and `Confirmation_Email_Error__c` if needed
+- [ ] LWC record page components added via App Builder
 - [ ] End-to-end signing flow tested
 - [ ] Audit immutability verified

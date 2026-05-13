@@ -1,4 +1,4 @@
-public with sharing class ESignEmailService {
+public without sharing class ESignEmailService {
 
     // ─────────────────────────────────────────────────────────────────────────
     // PUBLIC API
@@ -7,6 +7,115 @@ public with sharing class ESignEmailService {
     public static void sendSigningRequest(Signature_Request__c req) {
         Messaging.SingleEmailMessage mail = buildSigningRequestMail(req);
         sendWithAudit(mail, req, 'Email_Sent');
+    }
+
+    /**
+     * Sends a branded confirmation email to the signer with the signed PDF attached.
+     * Called by ESignConfirmationEmailQueueable after the merged PDF has been saved.
+     *
+     * @param req          Signature_Request__c with fields: Name, Recipient_Name__c,
+     *                     Signer_Email__c, Recipient_Email__c, Signed_DateTime__c
+     * @param pdfBlob      Signed PDF bytes fetched from ContentVersion.VersionData
+     * @param pdfFileName  File title used as the attachment name (no extension required)
+     */
+    public static void sendSignedConfirmation(
+            Signature_Request__c req,
+            Blob pdfBlob,
+            String pdfFileName) {
+
+        System.debug(LoggingLevel.ERROR,
+            '[EMAIL-S1] sendSignedConfirmation START. reqId=' + req.Id
+            + ' pdfSize=' + (pdfBlob != null ? pdfBlob.size() : 0)
+            + ' pdfFileName=' + pdfFileName);
+
+        String orgName     = System.Label.ESign_Org_Display_Name;
+        String support     = System.Label.ESign_Support_Email;
+        String signerEmail = String.isNotBlank(req.Signer_Email__c)
+            ? req.Signer_Email__c : req.Recipient_Email__c;
+        String greeting    = String.isNotBlank(req.Recipient_Name__c)
+            ? 'Hello ' + req.Recipient_Name__c + ','
+            : 'Hello,';
+        String signedAt    = req.Signed_DateTime__c != null
+            ? req.Signed_DateTime__c.format('dd MMMM yyyy HH:mm z') : 'N/A';
+
+        String body =
+              '<p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px">'
+            +     greeting + '</p>'
+            + '<p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 20px">'
+            +   'Your document has been signed successfully. The signed PDF with its Signature '
+            +   'Certificate is attached to this email for your records.</p>'
+            + '<div style="background:#f3fbf0;border:1px solid #b0ddb0;border-radius:6px;'
+            +   'padding:20px 24px;margin:0 0 24px">'
+            +   '<table style="width:100%;border-collapse:collapse;font-size:14px">'
+            +   '<tr><td style="color:#666;padding:5px 0;width:140px;vertical-align:top">'
+            +       'Document</td>'
+            +     '<td style="color:#222;font-weight:600;padding:5px 0">' + req.Name + '</td></tr>'
+            + (String.isNotBlank(req.Recipient_Name__c)
+                ? '<tr><td style="color:#666;padding:5px 0">Signed by</td>'
+                + '<td style="color:#222;padding:5px 0">' + req.Recipient_Name__c + '</td></tr>'
+                : '')
+            +   '<tr><td style="color:#666;padding:5px 0">Signed at</td>'
+            +     '<td style="color:#222;padding:5px 0">' + signedAt + '</td></tr>'
+            +   '</table></div>'
+            + '<p style="color:#555;font-size:13px;line-height:1.6;margin:0 0 8px">'
+            +   'The signed PDF is attached to this email. It contains a Signature Certificate '
+            +   'verifying the authenticity of the electronic signature.</p>'
+            + '<hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0"/>'
+            + '<p style="color:#888;font-size:12px;text-align:center;margin:0">'
+            +   'Generated securely via SF-eSign &bull; ' + orgName + '</p>';
+
+        String html = wrapHtml(orgName, 'Document Signed Successfully', body, support, req.Name);
+
+        String safeName = (String.isNotBlank(pdfFileName) ? pdfFileName : req.Name)
+            .replaceAll('[^a-zA-Z0-9 _\\-]', '').trim();
+        if (!safeName.toLowerCase().endsWith('.pdf')) safeName += '.pdf';
+
+        Messaging.EmailFileAttachment att = new Messaging.EmailFileAttachment();
+        att.setFileName(safeName);
+        att.setBody(pdfBlob);
+        att.setContentType('application/pdf');
+
+        Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+        mail.setToAddresses(new List<String>{ signerEmail });
+        mail.setSubject('Document Signed Successfully — ' + req.Name);
+        mail.setHtmlBody(html);
+        mail.setFileAttachments(new List<Messaging.EmailFileAttachment>{ att });
+        mail.setSaveAsActivity(false);
+        applyOwa(mail);
+
+        System.debug(LoggingLevel.ERROR,
+            '[EMAIL-S2] Calling Messaging.sendEmail. toAddress=' + signerEmail
+            + ' subject=Document Signed Successfully - ' + req.Name
+            + ' orgWideAddressId=' + mail.getOrgWideEmailAddressId());
+
+        try {
+            List<Messaging.SendEmailResult> results = Messaging.sendEmail(
+                new List<Messaging.SingleEmailMessage>{ mail }, false
+            );
+            if (results.isEmpty() || !results[0].isSuccess()) {
+                String err = (!results.isEmpty() && !results[0].getErrors().isEmpty())
+                    ? results[0].getErrors()[0].getMessage()
+                    : 'Unknown send error';
+                System.debug(LoggingLevel.ERROR,
+                    '[EMAIL-S2-FAIL] sendEmail returned failure. err=' + err);
+                throw new ESignException('EMAIL_SEND_ERROR:' + err);
+            }
+            System.debug(LoggingLevel.ERROR,
+                '[EMAIL-S3] sendEmail SUCCESS. reqId=' + req.Id + ' toAddress=' + signerEmail);
+            ESignAuditService.log(
+                req.Id, 'Signed_Confirmation_Sent', signerEmail, null, null, null, 'EmailService'
+            );
+        } catch (ESignException e) {
+            System.debug(LoggingLevel.ERROR,
+                '[EMAIL-S3-FAIL] ESignException: ' + e.getMessage());
+            ESignAuditService.logError(req.Id, e.getMessage(), signerEmail, null, 'EmailService');
+            throw e;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR,
+                '[EMAIL-S3-FAIL] Unexpected exception: ' + e.getMessage()
+                + ' | ' + e.getStackTraceString());
+            throw new ESignException('EMAIL_SEND_ERROR:' + e.getMessage());
+        }
     }
 
     public static void sendReminder(Signature_Request__c req) {

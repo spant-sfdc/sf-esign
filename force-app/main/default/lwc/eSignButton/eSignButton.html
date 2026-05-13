@@ -1,0 +1,136 @@
+<template>
+    <lightning-button
+        label="Request Signature"
+        icon-name="utility:email"
+        variant="brand"
+        onclick={handleOpen}>
+    </lightning-button>
+
+    <template if:true={isOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true"
+                 aria-labelledby="esb-heading"
+                 class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container esb-modal-container">
+
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                            aria-label="Close" title="Close" onclick={handleClose}>
+                        <lightning-icon icon-name="utility:close" size="small"
+                                        alternative-text="Close"></lightning-icon>
+                    </button>
+                    <h2 id="esb-heading" class="slds-modal__title">
+                        <lightning-icon icon-name="utility:email" size="small"
+                                        class="slds-var-m-right_x-small"></lightning-icon>
+                        Request eSignature
+                    </h2>
+                </header>
+
+                <!-- Body -->
+                <div class="slds-modal__content slds-var-p-around_medium">
+
+                    <!-- Document selection card -->
+                    <div class="esb-card">
+                        <div class="esb-card__header">Document</div>
+                        <div class="esb-card__body">
+                            <template if:true={isLoadingDocs}>
+                                <div class="slds-grid slds-grid_vertical-align-center esb-loading">
+                                    <lightning-spinner size="x-small" alternative-text="Loading documents"
+                                                      class="slds-var-m-right_small"></lightning-spinner>
+                                    <span>Loading documents…</span>
+                                </div>
+                            </template>
+                            <template if:false={isLoadingDocs}>
+                                <template if:true={hasDocuments}>
+                                    <lightning-combobox
+                                        label="Select document to sign"
+                                        value={selectedDocId}
+                                        options={documentOptions}
+                                        onchange={handleDocChange}
+                                        placeholder="Choose a document"
+                                        required>
+                                    </lightning-combobox>
+                                </template>
+                                <template if:false={hasDocuments}>
+                                    <div class="slds-grid slds-grid_vertical-align-center esb-no-docs">
+                                        <lightning-icon icon-name="utility:info" size="x-small"
+                                                        class="slds-var-m-right_x-small"></lightning-icon>
+                                        No generated documents found for this record.
+                                        Generate a document first using the Generate Document button.
+                                    </div>
+                                </template>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Recipient card -->
+                    <div class="esb-card">
+                        <div class="esb-card__header">Recipient</div>
+                        <div class="esb-card__body">
+                            <lightning-input
+                                type="email"
+                                label="Email"
+                                value={recipientEmail}
+                                onchange={handleEmailChange}
+                                placeholder="signer@example.com"
+                                required>
+                            </lightning-input>
+                            <lightning-input
+                                label="Name"
+                                value={recipientName}
+                                onchange={handleNameChange}
+                                placeholder="Optional"
+                                class="slds-var-m-top_x-small">
+                            </lightning-input>
+                            <lightning-textarea
+                                label="Message"
+                                value={messageToSigner}
+                                onchange={handleMessageChange}
+                                placeholder="Optional personal message…"
+                                max-length="500"
+                                class="slds-var-m-top_x-small">
+                            </lightning-textarea>
+                        </div>
+                    </div>
+
+                    <!-- Error -->
+                    <template if:true={error}>
+                        <div class="esb-banner esb-banner--error slds-grid slds-grid_vertical-align-center slds-wrap"
+                             role="alert">
+                            <lightning-icon icon-name="utility:error" size="x-small" variant="error"
+                                            class="slds-var-m-right_x-small"></lightning-icon>
+                            {error}
+                        </div>
+                    </template>
+
+                    <!-- Sending spinner -->
+                    <template if:true={isSending}>
+                        <div class="slds-var-m-top_small">
+                            <lightning-spinner size="small" alternative-text="Sending…"></lightning-spinner>
+                        </div>
+                    </template>
+
+                </div>
+
+                <!-- Footer -->
+                <footer class="slds-modal__footer">
+                    <lightning-button
+                        label="Cancel"
+                        onclick={handleClose}
+                        disabled={isSending}
+                        class="slds-var-m-right_x-small">
+                    </lightning-button>
+                    <lightning-button
+                        label="Send for Signature"
+                        variant="brand"
+                        icon-name="utility:email"
+                        onclick={handleSend}
+                        disabled={isSendDisabled}>
+                    </lightning-button>
+                </footer>
+
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

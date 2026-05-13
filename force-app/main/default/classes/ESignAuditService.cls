@@ -64,6 +64,17 @@ public class ESignAuditService {
             String rawToken,
             String sourceSystem) {
 
+        // Signature_Audit__c.Signature_Request__c is Master-Detail (required).
+        // Inserting with a null parent throws a DML exception. Skip insert and
+        // write to debug log instead — the error is still visible in Setup → Debug Logs.
+        if (String.isBlank(requestId)) {
+            System.debug(LoggingLevel.ERROR,
+                'ESignAuditService.logError [no requestId] source=' + sourceSystem
+                + ' token=' + ESignTokenService.maskToken(rawToken)
+                + ' detail=' + errorDetail);
+            return;
+        }
+
         try {
             Signature_Audit__c rec = buildAuditRecord(
                 requestId, 'Error', actorEmail,
